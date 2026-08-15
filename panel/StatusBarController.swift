@@ -28,7 +28,6 @@ final class StatusBarController: NSObject {
     private var statusItem: NSStatusItem?
     private var panel: KeyablePanel?
     private var cancellable: AnyCancellable?
-    private var clickMonitor: Any?
     /// 其他插件注册的菜单项（DSH 侧通过 socket 推送）
     private var pluginItems: [PluginMenuItem] = []
     /// DSH 运行时插件列表（动态监测）
@@ -57,16 +56,6 @@ final class StatusBarController: NSObject {
         }
         self.statusItem = item
 
-        // 点击面板外部关闭
-        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            guard let self, let panel = self.panel, panel.isVisible else { return event }
-            // 点在面板内 → 放行（可交互）；点在托盘按钮 → 放行（toggle 处理）；其他 → 关闭
-            if event.window === panel { return event }
-            if event.window === self.statusItem?.button?.window { return event }
-            panel.orderOut(nil)
-            return event
-        }
-
         // 模型变化 → 刷新菜单栏胶囊 + 右键菜单
         cancellable = model.objectWillChange.sink { [weak self] _ in
             MainActor.assumeIsolated {
@@ -84,10 +73,14 @@ final class StatusBarController: NSObject {
 
     func hide() {
         panel?.orderOut(nil)
-        if let clickMonitor { NSEvent.removeMonitor(clickMonitor) }
         if let statusItem { NSStatusBar.system.removeStatusItem(statusItem) }
         statusItem = nil
         panel = nil
+    }
+
+    /// 面板失去 key（点击外部/其他 app）→ 关闭展示框
+    @objc private func panelDidResignKey(_ note: Notification) {
+        panel?.orderOut(nil)
     }
 
     // MARK: 按钮状态
@@ -269,8 +262,14 @@ final class StatusBarController: NSObject {
         p.backgroundColor = .clear
         p.hasShadow = true
         p.contentView = hosting
-        p.hidesOnDeactivate = false
+        p.hidesOnDeactivate = true   // 点击面板外其他 app → 自动隐藏
         self.panel = p
+
+        // 面板失去 key（点击外部/其他 app）→ 关闭
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(panelDidResignKey),
+            name: NSWindow.didResignKeyNotification, object: p
+        )
 
         // 用按钮屏幕坐标定位：面板顶部紧贴按钮底部，水平居中
         let btnRect = window.convertToScreen(button.convert(button.bounds, to: nil))
