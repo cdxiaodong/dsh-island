@@ -1,4 +1,5 @@
-# cordis.patch.yml —— 把 dsh-island 插入 DSH 宿主模块树
-plugins:
-  dsh-island:
-    $entry: ./lib/index.js
+# cordis.patch.yml —— loader patch：把 dsh-island 插入 DSH 宿主插件树
+# 顶层必须是 YAML 数组（loader patch entries），`insert` 为插入的插件条目
+- insert:
+    - id: dsh-island
+      name: dsh-island
