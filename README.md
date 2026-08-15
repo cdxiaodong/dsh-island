@@ -75,6 +75,57 @@ interface Config {
 }
 ```
 
+## 托盘动态内容
+
+菜单栏胶囊随 DSH 状态实时变化：
+
+| 状态 | 托盘显示 |
+|---|---|
+| 空闲 | `空闲 5m`（会话时长）+ 鲸鱼娘 idle 慢眨眼 |
+| 运行中 | `git commit ·12`（工具名 + 调用计数） |
+| 等待授权 | `等待授权`（琥珀点 + 鲸鱼娘 wait 摆动） |
+| 子代理 | 右键菜单显示 `子代理 N` |
+
+鲸鱼娘半身动画 **15+ 动作**，随状态协调切换（working/think/wait/celebrate/error），空闲时随机轮播 walk/play/joy/sleep/eat/waving/wake 等。
+
+## 插件注册接口
+
+其他 DSH 插件可以在**托盘右键菜单**里注册自己的菜单项：
+
+```typescript
+import type { Context } from 'cordis'
+
+export const inject = ['island']
+
+export function apply(ctx: Context) {
+  // 注册一个菜单项（出现在托盘右键菜单，图标 + 标题）
+  ctx.island.registerMenuItem({
+    id: 'my-plugin',
+    title: '我的插件',
+    icon: '🔧',
+    action: () => {
+      // 用户点击托盘菜单项时执行
+      console.log('my-plugin clicked')
+    },
+  })
+  // 插件卸载时自动注销（ctx 生命周期自动清理）
+}
+```
+
+## 插件管理
+
+托盘**右键 →「插件管理」**子菜单：
+
+- 动态列出 DSH 运行时**所有插件**（`●`运行 / `○`停止）
+- 点击运行中的插件 → **关闭**；点击停止的 → **启用**
+- 插件加载/卸载时**自动刷新**列表（无需手动操作）
+
+## 交互
+
+- **左键**托盘 → 打开展示框（鲸鱼娘随机欢迎动作）
+- **右键**托盘 → 菜单（状态/统计/插件管理/打开面板/退出）
+- 点击展示框外部 → 自动关闭
+
 ## 开发
 
 ```bash

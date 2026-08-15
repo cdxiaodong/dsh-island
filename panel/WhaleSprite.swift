@@ -31,11 +31,15 @@ enum Whale2Assets {
         "welcome": .init(frames: 2, fps: 3, playback: .loop),
         "think": .init(frames: 1, fps: 2, playback: .loop),
         "wait": .init(frames: 1, fps: 2, playback: .loop),
+        // 镜像朝向变体（新增动作）
+        "walk-left": .init(frames: 3, fps: 6, playback: .pingpong),
+        "play-left": .init(frames: 3, fps: 4, playback: .loop),
+        "welcome-left": .init(frames: 2, fps: 3, playback: .loop),
     ]
 
-    /// 空闲日常随机动作池（十几套动作轮播）
-    static let idlePlaylist = ["idle", "walk", "play", "joy", "welcome", "disappointed",
-                               "sleep", "eat", "waving", "wake"]
+    /// 空闲日常随机动作池（十八套动作轮播）
+    static let idlePlaylist = ["idle", "walk", "walk-left", "play", "play-left", "joy",
+                               "welcome", "welcome-left", "disappointed", "sleep", "eat", "wake"]
 
     private static var frameCache: [String: [NSImage]] = [:]
     private static var halfFrameCache: [String: [NSImage]] = [:]
@@ -147,7 +151,7 @@ struct WhaleSpriteView: View {
 
     /// 打开面板时随机一个欢迎/打招呼动作，短暂播放后回正常状态
     private func playRandomWelcome() {
-        let welcomes = ["welcome", "waving", "joy", "play"]
+        let welcomes = ["welcome", "welcome-left", "joy", "play"]
         let w = welcomes.randomElement() ?? "welcome"
         play(w)
         stopIdleRandom()

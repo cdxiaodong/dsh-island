@@ -54,9 +54,9 @@ final class StatusBarController: NSObject {
             button.imageScaling = .scaleNone
             button.target = self
             button.action = #selector(togglePanel(_:))
-            button.sendAction(on: [.leftMouseUp])   // 左键触发 action，右键弹 menu
             button.toolTip = "dsh-island — DeepSeek Harness 灵动岛"
-            button.menu = buildMenu()   // 右键菜单
+            // macOS 默认：左键触发 action（打开面板），右键显示 menu（菜单）
+            button.menu = buildMenu()
         }
         self.statusItem = item
 
