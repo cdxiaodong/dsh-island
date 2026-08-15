@@ -1,5 +1,5 @@
-// PanelView.swift —— 灵动岛面板的 SwiftUI 视图。
-// 借鉴 CodeIsland 的 NotchPanelView 深色像素风，精简为单卡片。
+// PanelView.swift —— 菜单栏灵动岛展开面板（NSPopover 内容）。
+// 深色毛玻璃卡片：DSH 标识 + 状态 + 当前工具 + 事件流 + 审批卡。
 import SwiftUI
 
 struct PanelView: View {
@@ -19,93 +19,109 @@ struct PanelView: View {
 
     private var statusColor: Color {
         switch model.status {
-        case "running": return .blue
+        case "running", "processing": return .blue
         case "waitingApproval": return .yellow
-        case "processing": return .blue
-        default: return .secondary
+        default: return .gray
+        }
+    }
+    private var statusLabel: String {
+        switch model.status {
+        case "running": return "运行中"
+        case "processing": return "处理中"
+        case "waitingApproval": return "等待授权"
+        case "idle": return "空闲"
+        default: return model.status
         }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             header
             if model.approval != nil {
                 approvalCard
             }
             eventList
         }
-        .padding(14)
-        .frame(width: 420)
+        .padding(16)
+        .frame(width: 400)
         .background(
             RoundedRectangle(cornerRadius: 18)
-                .fill(Color(red: 0.10, green: 0.10, blue: 0.13))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color(red: 0.17, green: 0.17, blue: 0.22), lineWidth: 1)
-                )
+                .fill(.ultraThinMaterial)
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.10), lineWidth: 1))
         )
-        .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
+        .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
     }
 
-    // MARK: 头部：标识 + 名称 + 状态灯
+    // MARK: 头部
     private var header: some View {
         HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 7)
-                    .fill(LinearGradient(colors: [Color(red: 0.31, green: 0.55, blue: 1.0),
-                                                  Color(red: 0.48, green: 0.36, blue: 1.0)],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing))
-                Text("D").font(.system(size: 16, weight: .heavy, design: .monospaced)).foregroundColor(.white)
-            }
-            .frame(width: 34, height: 34)
+            // DSH 鲸鱼图标
+            Text("🐋")
+                .font(.system(size: 22))
+                .frame(width: 38, height: 38)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(LinearGradient(colors: [Color(red: 0.31, green: 0.55, blue: 1.0),
+                                                      Color(red: 0.48, green: 0.36, blue: 1.0)],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                )
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text("DeepSeek Harness").font(.system(size: 13, weight: .bold)).foregroundColor(.white)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("DeepSeek Harness")
+                    .font(.system(size: 13, weight: .bold))
                 Text(model.cwd)
-                    .font(.system(size: 9))
-                    .foregroundColor(Color(red: 0.48, green: 0.48, blue: 0.56))
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .truncationMode(.middle)
             }
 
             Spacer()
 
-            HStack(spacing: 4) {
-                Circle().fill(statusColor).frame(width: 7, height: 7)
-                Text(model.status).font(.system(size: 9)).foregroundColor(.secondary)
+            // 状态胶囊
+            HStack(spacing: 5) {
+                Circle().fill(statusColor).frame(width: 8, height: 8)
+                Text(statusLabel)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(.white.opacity(0.08)))
         }
     }
 
     // MARK: 审批卡
     private var approvalCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("🛡️ 需要授权").font(.system(size: 11, weight: .bold)).foregroundColor(.yellow)
-            Text(model.approval?.tool ?? "tool")
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(.white)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Text("🛡️").font(.system(size: 14))
+                Text("需要授权")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.yellow)
+            }
             Text(model.approval?.reason ?? "")
-                .font(.system(size: 10))
-                .foregroundColor(Color(red: 0.66, green: 0.60, blue: 0.47))
+                .font(.system(size: 10.5))
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
             HStack(spacing: 8) {
                 Button { ModelResponder.approve() } label: {
-                    Text("允许").frame(maxWidth: .infinity).padding(.vertical, 6)
+                    Label("允许", systemImage: "checkmark").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(PlainButtonStyle())
-                .background(RoundedRectangle(cornerRadius: 8).fill(.green))
-                .foregroundColor(.black)
+                .buttonStyle(BorderedProminentButtonStyle())
+                .tint(.green)
 
                 Button { ModelResponder.deny() } label: {
-                    Text("拒绝").frame(maxWidth: .infinity).padding(.vertical, 6)
+                    Label("拒绝", systemImage: "xmark").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(PlainButtonStyle())
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.17, green: 0.17, blue: 0.22)))
-                .foregroundColor(.red)
+                .buttonStyle(BorderedButtonStyle())
+                .tint(.red)
             }
-            .font(.system(size: 11, weight: .bold))
+            .controlSize(.small)
         }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color(red: 0.14, green: 0.11, blue: 0.06)))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(red: 0.29, green: 0.23, blue: 0.09), lineWidth: 1))
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(.yellow.opacity(0.12)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.yellow.opacity(0.25), lineWidth: 1))
     }
 
     // MARK: 事件流
@@ -114,29 +130,35 @@ struct PanelView: View {
             ForEach(model.events) { row in
                 HStack(spacing: 6) {
                     Text(row.timestamp.formatted(date: .omitted, time: .standard))
-                        .font(.system(size: 8)).foregroundColor(Color(red: 0.33, green: 0.33, blue: 0.41))
+                        .font(.system(size: 8)).foregroundStyle(.tertiary)
                     Text(icons[row.name] ?? "·").font(.system(size: 9))
                     Text(row.name)
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(colors[row.name] ?? .secondary)
+                        .foregroundStyle(colors[row.name] ?? .secondary)
                     if let tool = row.tool {
-                        Text(tool).font(.system(size: 8)).foregroundColor(.blue)
+                        Text(tool)
+                            .font(.system(size: 8.5, design: .monospaced))
+                            .foregroundStyle(.blue)
                             .padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(RoundedRectangle(cornerRadius: 4).fill(Color(red: 0.12, green: 0.12, blue: 0.17)))
+                            .background(RoundedRectangle(cornerRadius: 4).fill(.white.opacity(0.07)))
                     }
                     if let q = row.question {
-                        Text(q).font(.system(size: 8)).foregroundColor(.yellow).lineLimit(1)
+                        Text(q).font(.system(size: 8)).foregroundStyle(.yellow).lineLimit(1)
                     }
                     if let m = row.message, !m.hasPrefix("Agent status:") {
-                        Text(m).font(.system(size: 8)).foregroundColor(.secondary).lineLimit(1)
+                        Text(m).font(.system(size: 8)).foregroundStyle(.secondary).lineLimit(1)
                     }
+                    Spacer(minLength: 0)
                 }
             }
             if model.events.isEmpty {
-                Text("等待 DSH 事件…").font(.system(size: 10)).foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 60)
+                Text("等待 DSH 事件…")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 70)
             }
         }
+        .padding(.top, 2)
     }
 }
 

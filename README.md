@@ -4,22 +4,23 @@
 
 # dsh-island
 
-> 自带 **macOS 灵动岛（Dynamic Island / 刘海面板）** 的 DeepSeek Harness（DSH）插件 —— 插件一启动，DSH 的会话、工具调用、审批直接出现在你的 MacBook 刘海区域，无需安装任何第三方应用。
+> 自带 **macOS 菜单栏灵动岛** 的 DeepSeek Harness（DSH）插件 —— 插件一启动，DSH 的会话、工具调用、审批直接出现在你的**顶部菜单栏**，点击展开实时面板，无需安装任何第三方应用。
 
 ## 这是什么
 
-开发 AI agent 时，最常见的烦恼是「切窗口看它到底在干嘛、是不是卡在审批」。**dsh-island 把 DSH 的实时状态直接带到你的屏幕顶部刘海**：
+开发 AI agent 时，最常见的烦恼是「切窗口看它到底在干嘛、是不是卡在审批」。**dsh-island 把 DSH 的实时状态带进 macOS 菜单栏**：
 
-- 插件 apply 时**自动拉起原生 Swift 面板**（`bin/dsh-island-panel`，NSPanel + SwiftUI，借鉴 [CodeIsland](https://github.com/wxtsky/CodeIsland) 的实现）
-- 面板监听 Unix socket，插件把 DSH 内置事件实时推给它
-- 审批请求直接在刘海面板上点「允许 / 拒绝」，决策回写 DSH
+- 插件 apply 时**自动拉起原生 Swift 面板**（`bin/dsh-island-panel`，NSStatusItem + NSPopover + SwiftUI，借鉴 [CodeIsland](https://github.com/wxtsky/CodeIsland) 的实现）
+- 菜单栏按钮文案**随状态动态变化**：`🐋 DSH`（空闲）→ `🔧 运行中 / 🔧 <工具>`（执行中）→ `🛡️ 需要授权`（审批中）
+- 点击菜单栏图标 → 弹出毛玻璃灵动岛面板：会话、工具调用、事件流
+- 审批请求直接在面板上点「允许 / 拒绝」，决策回写 DSH
 
 ```
 DSH 进程
   └─ dsh-island 插件（cordis）
-       ├─ apply() 时 spawn → bin/dsh-island-panel（Swift 原生 NSPanel，屏幕顶部）
+       ├─ apply() 时 spawn → bin/dsh-island-panel（Swift 原生，常驻菜单栏）
        ├─ 监听 DSH 事件（session/tools/approval/subagent/status）
-       └─ Unix socket /tmp/dsh-island-<uid>.sock → 面板实时渲染
+       └─ Unix socket /tmp/dsh-island-<uid>.sock → 菜单栏图标 + 面板实时更新
                             ↑ 面板上点「允许/拒绝」→ 决策回写 DSH
 ```
 
@@ -27,10 +28,11 @@ DSH 进程
 
 ## 功能
 
-- **自动拉起**：插件加载即在刘海区域弹出灵动岛面板（已运行则不重复启动）
+- **自动拉起**：插件加载即常驻菜单栏（已运行则不重复启动）
+- **动态菜单栏**：按钮文案随状态变（空闲/运行中/等待授权）
 - **会话状态**：`SessionStart` / `SessionEnd` 跟随 DSH 会话生命周期
 - **工具调用**：`PreToolUse` / `PostToolUse` / `PostToolUseFailure` 实时展示正在执行的工具
-- **面板审批**：`approval/request` → 刘海面板出现「需要授权」卡，点「允许 / 拒绝」直接回写 DSH
+- **面板审批**：`approval/request` → 面板出现「需要授权」卡，点「允许 / 拒绝」直接回写 DSH
 - **子代理**：`SubagentStart` / `SubagentStop`
 - **状态变化**：`agent/status` → 面板状态灯与提示
 - **零侵入**：不修改 DSH 配置、不拦截工具决策（`next()` 总是放行）
@@ -88,9 +90,10 @@ node scripts/live-panel.mjs   # 浏览器版实时演示（无 DSH 时看效果�
 
 | 组件 | 来源 |
 |---|---|
-| NSPanel 刘海定位 + 交互（`canBecomeKey` / `acceptsFirstMouse`） | CodeIsland `PanelWindowController` / `NotchHostingView` |
+| 菜单栏 NSStatusItem + NSPopover 灵动岛 | CodeIsland `StatusItemController` 思路 + 自研 popover |
+| 菜单栏模板图标 / 状态文案 | CodeIsland `menuBarIcon` 的 template 约定 |
 | NWListener Unix socket 接收 | CodeIsland `HookServer` |
-| 深色像素风 SwiftUI 卡片 | CodeIsland `NotchPanelView` 风格精简 |
+| 深色毛玻璃 SwiftUI 卡片 | CodeIsland `NotchPanelView` 风格精简 |
 
 ## License
 

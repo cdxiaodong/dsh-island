@@ -12,8 +12,8 @@ swiftc -swift-version 5 \
   panel/PanelModel.swift \
   panel/SocketServer.swift \
   panel/PanelView.swift \
-  panel/PanelWindow.swift \
+  panel/StatusBarController.swift \
   -o bin/dsh-island-panel \
-  -framework AppKit -framework SwiftUI -framework Network
+  -framework AppKit -framework SwiftUI -framework Network -framework Combine
 
 echo "✓ built bin/dsh-island-panel ($(file -b bin/dsh-island-panel | cut -d, -f1-2))"

@@ -1,5 +1,5 @@
 // main.swift —— dsh-island-panel 入口。
-// 一个无 Dock 图标的辅助进程：监听 Unix socket，把 DSH 事件渲染成 macOS 刘海灵动岛。
+// 无 Dock 图标的辅助进程：监听 Unix socket，DSH 状态显示为 macOS 菜单栏灵动岛。
 import AppKit
 import SwiftUI
 
@@ -13,7 +13,7 @@ MainActor.assumeIsolated {
     ModelResponder.server = server
     server.start()
 
-    let controller = PanelWindowController(model: model)
+    let controller = StatusBarController(model: model)
     controller.show()
 
     app.run()
