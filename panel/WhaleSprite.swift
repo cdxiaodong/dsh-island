@@ -54,6 +54,15 @@ enum Whale2Assets {
     }
 
     static func state(_ name: String) -> State { states[name] ?? .init(frames: 1, fps: 2, playback: .loop) }
+
+    /// 半身鲸鱼娘图标（菜单栏胶囊用）
+    static var menuIcon: NSImage? {
+        guard let dir = resourceDir else { return nil }
+        let url = dir.appendingPathComponent("menu-icon.png")
+        guard let img = NSImage(contentsOf: url) else { return nil }
+        img.size = NSSize(width: 18, height: 20)
+        return img
+    }
 }
 
 // MARK: - 行为决策

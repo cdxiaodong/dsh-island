@@ -1,9 +1,6 @@
-// StatusBarController.swift —— 菜单栏灵动岛。
-// 常驻 macOS 顶部菜单栏（NSStatusItem），按钮文案随 DSH 状态动态变化：
-//   空闲  🐋
-//   运行  🔧 <当前工具> / 🔧 运行中
-//   审批  🛡️ 需要授权
-// 点击按钮弹出 NSPopover 灵动岛面板（SwiftUI），审批直接在面板上点。
+// StatusBarController.swift —— 菜单栏灵动岛托盘。
+// 常驻 macOS 顶部菜单栏（NSStatusItem）：鲸鱼娘半身 + 状态文字的宽胶囊，
+// 点击弹出 NSPopover 灵动岛面板（SwiftUI 弹性展开），审批直接在面板上点。
 import AppKit
 import SwiftUI
 import Combine
@@ -21,15 +18,22 @@ final class StatusBarController: NSObject {
     }
 
     func show() {
+        // 胶囊托盘：variableLength 由内容撑起（鲸鱼娘 + 宽状态文字）
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
             button.target = self
             button.action = #selector(togglePopover(_:))
             button.toolTip = "dsh-island — DeepSeek Harness 灵动岛"
-            // 半身鲸鱼娘常驻在按钮左边
             button.image = Self.loadMenuIcon()
             button.imagePosition = .imageLeading
             button.imageScaling = .scaleProportionallyDown
+            // DSH 蓝灰胶囊背景（深色圆角 + 细边框）
+            button.wantsLayer = true
+            button.layer?.backgroundColor = NSColor(calibratedRed: 0.075, green: 0.086, blue: 0.11, alpha: 1).cgColor
+            button.layer?.cornerRadius = 11
+            button.layer?.cornerCurve = .continuous
+            button.layer?.borderWidth = 1
+            button.layer?.borderColor = NSColor(calibratedRed: 0.14, green: 0.15, blue: 0.20, alpha: 1).cgColor
             refreshButton()
         }
         statusItem = item
@@ -74,19 +78,20 @@ final class StatusBarController: NSObject {
         switch model.status {
         case "waitingApproval":
             text = "等待授权"
-            color = .systemYellow
+            color = NSColor(calibratedRed: 0.98, green: 0.75, blue: 0.14, alpha: 1)   // 琥珀
         case "running", "processing":
             text = model.currentTool.map { "\($0)" } ?? "运行中"
-            color = .systemCyan
+            color = NSColor(calibratedRed: 0.09, green: 0.91, blue: 0.98, alpha: 1)   // DSH 青
         case "idle":
-            text = "DSH"
-            color = .labelColor
+            text = "空闲"
+            color = NSColor(calibratedRed: 0.55, green: 0.60, blue: 0.72, alpha: 1)   // DSH 蓝灰
         default:
             text = "DSH"
-            color = .labelColor
+            color = NSColor(calibratedRed: 0.55, green: 0.60, blue: 0.72, alpha: 1)
         }
+        // 前后留白，撑出更宽的胶囊托盘
         button.attributedTitle = NSAttributedString(
-            string: text,
+            string: "  \(text)  ",
             attributes: [
                 .font: NSFont.systemFont(ofSize: 11.5, weight: .medium),
                 .foregroundColor: color,

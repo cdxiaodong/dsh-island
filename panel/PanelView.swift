@@ -23,10 +23,10 @@ struct PanelView: View {
     /// 进入动画：从顶部小胶囊弹性展开（像 iPhone 灵动岛）
     @State private var appeared = false
 
-    // MioIsland Classic 主题色板
-    private let chromeBg = Color(hex: "0A0A0B")
-    private let chromeOverlay = Color(hex: "191919")
-    private let chromeBorder = Color(hex: "2A2A2C")
+    // MioIsland Classic 主题色板 + DSH 蓝灰（dsh-web-ui 调调）
+    private let chromeBg = Color(hex: "0E0E0E")   // DSH 深色底
+    private let chromeOverlay = Color(hex: "1A1A1A")
+    private let chromeBorder = Color(hex: "232833")
     private let textPrimary = Color(hex: "EDEDEE")
     private let textSecondary = Color(hex: "C7C7CB")
     private let textMuted = Color(hex: "8B8B90")
