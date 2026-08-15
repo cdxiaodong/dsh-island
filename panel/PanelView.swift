@@ -96,14 +96,10 @@ struct PanelView: View {
     // MARK: 头部
     private var header: some View {
         HStack(spacing: 11) {
-            // 鲸鱼标识
-            ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(LinearGradient(colors: [Color(hex: "1FF0FF"), Color(hex: "B794F6")],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing))
-                Text("🐋").font(.system(size: 18))
-            }
-            .frame(width: 40, height: 40)
+            // 鲸鱼娘动画吉祥物
+            WhaleSpriteView(state: WhaleAssets.spriteState(for: model.status))
+                .frame(width: 40, height: 52)
+                .padding(.leading, -2)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("DeepSeek Harness")
