@@ -71,18 +71,19 @@ final class StatusBarController: NSObject {
         case "idle": text = "空闲"
         default: text = "DSH"
         }
-        button.image = Self.renderCapsule(text: text)
+        button.image = Self.renderCapsule(text: text, status: model.status)
         button.imageScaling = .scaleNone
     }
 
-    /// 绘制 DSH 浅蓝胶囊图：更浅蓝渐变底 + 深蓝粗体字（高对比）+ 鲸鱼娘，最小宽 120
-    static func renderCapsule(text: String) -> NSImage {
+    /// 绘制 DSH 浅蓝胶囊图：浅蓝渐变底 + 深蓝粗字 + 状态点 + 鲸鱼娘，最小宽 120
+    static func renderCapsule(text: String, status: String) -> NSImage {
         let font = NSFont.systemFont(ofSize: 12, weight: .bold)
         let textSize = (text as NSString).size(withAttributes: [.font: font])
         let iconW: CGFloat = 22
+        let dotW: CGFloat = 10
         let padding: CGFloat = 16
         let height: CGFloat = 22
-        let width = max(120, iconW + textSize.width + padding * 2)
+        let width = max(120, iconW + textSize.width + dotW + padding * 2)
 
         let img = NSImage(size: NSSize(width: width, height: height))
         img.lockFocus()
@@ -109,12 +110,23 @@ final class StatusBarController: NSObject {
         if let icon = Self.loadMenuIcon() {
             icon.draw(in: NSRect(x: padding, y: 1, width: 20, height: 20))
         }
-        // 深蓝粗体状态文字（#0e1835，浅蓝上高对比）
+        // 状态点（文字前）
+        let dotX = padding + iconW + 2
+        let dotColor: NSColor
+        switch status {
+        case "waitingApproval": dotColor = NSColor(calibratedRed: 0.96, green: 0.72, blue: 0.10, alpha: 1)  // 琥珀
+        case "running", "processing": dotColor = NSColor(calibratedRed: 0.05, green: 0.65, blue: 0.75, alpha: 1)  // 青
+        default: dotColor = NSColor(calibratedRed: 0.30, green: 0.38, blue: 0.55, alpha: 1)  // 蓝灰
+        }
+        dotColor.setFill()
+        NSBezierPath(ovalIn: NSRect(x: dotX, y: height / 2 - 3, width: 6, height: 6)).fill()
+
+        // 深蓝粗体状态文字
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: NSColor(calibratedRed: 0.055, green: 0.094, blue: 0.208, alpha: 1),
         ]
-        let textX = padding + iconW + 4
+        let textX = dotX + dotW + 1
         (text as NSString).draw(at: NSPoint(x: textX, y: 3.5), withAttributes: attrs)
 
         return img
