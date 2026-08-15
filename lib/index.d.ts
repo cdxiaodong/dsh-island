@@ -62,6 +62,7 @@ export declare class IslandService extends Service {
     /** 其他插件注册的菜单项 */
     private menuItems;
     private ctlServer?;
+    private pluginRefreshTimer;
     /** 插件管理：name → { callback, runtime }（registry 快照） */
     private pluginRegistry;
     /** 被禁用的插件缓存（enable 时恢复） */
@@ -79,6 +80,8 @@ export declare class IslandService extends Service {
     private pushMenu;
     /** 监听面板发来的命令（控制 socket /tmp/dsh-island-ctl-<uid>.sock） */
     private startCtlServer;
+    /** 插件变化（加载/卸载）后防抖刷新面板插件列表 */
+    private schedulePluginListRefresh;
     /** 收集 registry 里已加载的插件快照 */
     private collectPlugins;
     /** 把插件列表发给面板（plugin_list → 右键菜单「插件管理」） */

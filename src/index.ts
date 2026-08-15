@@ -74,6 +74,7 @@ export class IslandService extends Service {
   /** 其他插件注册的菜单项 */
   private menuItems: IslandMenuItem[] = []
   private ctlServer?: ReturnType<typeof createServer>
+  private pluginRefreshTimer: ReturnType<typeof setTimeout> | undefined
   /** 插件管理：name → { callback, runtime }（registry 快照） */
   private pluginRegistry = new Map<string, { callback: unknown; runtime: { name?: string; callback?: unknown; Config?: unknown } }>()
   /** 被禁用的插件缓存（enable 时恢复） */
@@ -88,10 +89,14 @@ export class IslandService extends Service {
 
     // 监听面板发来的菜单点击（控制 socket）
     this.startCtlServer()
-    // 插件卸载时清理 ctl server
+    // 插件加载/卸载 → 自动刷新面板插件列表（动态感知新增插件）
+    ctx.on('internal/plugin' as any, () => this.schedulePluginListRefresh())
+    this.schedulePluginListRefresh()
+    // 插件卸载时清理
     ctx.effect(() => () => {
       this.ctlServer?.close()
       this.ctlServer = undefined
+      if (this.pluginRefreshTimer) clearTimeout(this.pluginRefreshTimer)
     })
 
     // 会话生命周期
@@ -278,6 +283,15 @@ export class IslandService extends Service {
   }
 
   // ---- 插件管理（动态监测 + 启用/关闭）----
+
+  /** 插件变化（加载/卸载）后防抖刷新面板插件列表 */
+  private schedulePluginListRefresh() {
+    if (this.pluginRefreshTimer) clearTimeout(this.pluginRefreshTimer)
+    this.pluginRefreshTimer = setTimeout(() => {
+      this.pluginRefreshTimer = undefined
+      void this.sendPluginList()
+    }, 500)
+  }
 
   /** 收集 registry 里已加载的插件快照 */
   private collectPlugins() {
