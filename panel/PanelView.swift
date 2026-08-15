@@ -74,23 +74,36 @@ struct PanelView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(spacing: 0) {
+            // 顶部浅蓝品牌区（呼应托盘胶囊）
             header
-            Divider().overlay(chromeBorder).padding(.vertical, 10)
-            if model.approval != nil {
-                approvalCard
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                Divider().overlay(chromeBorder).padding(.vertical, 10)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    LinearGradient(colors: [Color(hex: "AFC0EA"), Color(hex: "7F96D2")],
+                                   startPoint: .top, endPoint: .bottom)
+                )
+            Divider().overlay(Color(hex: "6E83C4").opacity(0.6))
+            // 深色内容区
+            VStack(alignment: .leading, spacing: 0) {
+                if model.approval != nil {
+                    approvalCard
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    Divider().overlay(chromeBorder).padding(.vertical, 10)
+                }
+                eventList
             }
-            eventList
+            .padding(14)
         }
-        .padding(16)
         .frame(width: 392)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(chromeBg)
-                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(chromeBorder, lineWidth: 1))
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(chromeBorder, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.45), radius: 30, y: 14)
         // 灵动岛弹性展开：从顶部小胶囊 spring 放大到完整面板
@@ -104,21 +117,21 @@ struct PanelView: View {
         }
     }
 
-    // MARK: 头部
+    // MARK: 头部（浅蓝品牌区，文字深蓝）
     private var header: some View {
         HStack(spacing: 11) {
-            // 鲸鱼娘桌宠动画（15 动作 + 日常随机 + 状态联动）
+            // 鲸鱼娘桌宠动画
             WhaleSpriteView(status: model.status, mood: model.mood, width: 46, height: 52)
                 .frame(width: 46, height: 52)
                 .padding(.trailing, 4)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text("DeepSeek Harness")
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(textPrimary)
+                    .foregroundStyle(Color(hex: "0E1835"))
                 Text(model.cwd)
                     .font(.system(size: 9.5, design: .monospaced))
-                    .foregroundStyle(textMuted)
+                    .foregroundStyle(Color(hex: "0E1835").opacity(0.55))
                     .lineLimit(1)
                     .truncationMode(.middle)
                 // 当前工具（运行中显示）
@@ -127,26 +140,26 @@ struct PanelView: View {
                         Image(systemName: "hammer.fill").font(.system(size: 8.5))
                         Text(tool).font(.system(size: 10, design: .monospaced))
                     }
-                    .foregroundStyle(cWorking)
+                    .foregroundStyle(Color(hex: "0E1835"))
                     .padding(.horizontal, 7).padding(.vertical, 2)
-                    .background(Capsule().fill(cWorking.opacity(0.12)))
+                    .background(Capsule().fill(Color.white.opacity(0.55)))
                 }
             }
 
             Spacer()
 
-            // 状态胶囊（浅蓝，呼应托盘）
+            // 状态胶囊（白底深蓝字，浅蓝 header 上清晰）
             HStack(spacing: 5) {
                 Circle().fill(statusColor).frame(width: 7, height: 7)
                     .shadow(color: statusColor.opacity(0.8), radius: 3)
                 Text(statusLabel)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(Color(hex: "0E1835"))
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(Capsule().fill(Color(hex: "B8C6EC")))
-            .overlay(Capsule().stroke(Color(hex: "8EA2D8"), lineWidth: 1))
+            .background(Capsule().fill(Color.white.opacity(0.85)))
+            .overlay(Capsule().stroke(Color.white.opacity(0.5), lineWidth: 1))
         }
     }
 
