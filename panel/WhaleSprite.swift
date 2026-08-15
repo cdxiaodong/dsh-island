@@ -33,15 +33,23 @@ enum Whale2Assets {
         "wait": .init(frames: 1, fps: 2, playback: .loop),
     ]
 
-    /// 空闲日常随机动作池（持续几秒后回 idle）
-    static let idlePlaylist = ["idle", "walk", "play", "joy", "welcome", "disappointed"]
+    /// 空闲日常随机动作池（十几套动作轮播）
+    static let idlePlaylist = ["idle", "walk", "play", "joy", "welcome", "disappointed",
+                               "sleep", "eat", "waving", "wake"]
 
     private static var frameCache: [String: [NSImage]] = [:]
+    private static var halfFrameCache: [String: [NSImage]] = [:]
     private static var resourceDir: URL? = {
         let execDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
         let bundled = execDir.appendingPathComponent("whale2")
         if FileManager.default.fileExists(atPath: bundled.path) { return bundled }
         return execDir.deletingLastPathComponent().appendingPathComponent("panel/resources/whale2")
+    }()
+    private static var halfResourceDir: URL? = {
+        let execDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
+        let bundled = execDir.appendingPathComponent("whale2b")
+        if FileManager.default.fileExists(atPath: bundled.path) { return bundled }
+        return execDir.deletingLastPathComponent().appendingPathComponent("panel/resources/whale2b")
     }()
 
     static func frames(for state: String) -> [NSImage] {
@@ -54,7 +62,23 @@ enum Whale2Assets {
         return images
     }
 
+    /// 半身帧（托盘专用，头+上半身，完整 PNG 不裁剪）
+    static func halfFrames(for state: String) -> [NSImage] {
+        if let hit = halfFrameCache[state] { return hit }
+        guard let dir = halfResourceDir else { return [] }
+        let frameDir = dir.appendingPathComponent("frames/\(state)")
+        let urls = (try? FileManager.default.contentsOfDirectory(at: frameDir, includingPropertiesForKeys: nil)) ?? []
+        let images = urls.sorted { $0.lastPathComponent < $1.lastPathComponent }.compactMap { NSImage(contentsOf: $0) }
+        halfFrameCache[state] = images
+        return images
+    }
+
     static func state(_ name: String) -> State { states[name] ?? .init(frames: 1, fps: 2, playback: .loop) }
+
+    /// 某动作的帧率（控制动画速度：idle 慢眨眼 / walk 快 / error 抖）
+    static func fps(for state: String) -> Double {
+        states[state]?.fps ?? 2
+    }
 
     /// 半身鲸鱼娘图标（菜单栏胶囊用）
     static var menuIcon: NSImage? {
@@ -94,8 +118,9 @@ struct WhaleSpriteView: View {
     @State private var frameIndex = 0
     @State private var direction = 1
     @State private var idleTimer: Timer?
+    @State private var frameAccum: Double = 0
 
-    /// 全局帧时钟：每 0.1s 推进一帧（不同动作共用，循环即可）
+    /// 全局帧时钟：每 0.1s 触发，按动作 fps 推进（idle 慢眨眼 / walk 快）
     private let ticker = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -111,10 +136,24 @@ struct WhaleSpriteView: View {
         }
         .frame(width: width, height: height)
         .onReceive(ticker) { _ in tick() }
-        .onAppear { updateAction() }
+        .onAppear {
+            updateAction()
+            playRandomWelcome()   // 打开面板 → 随机欢迎动作
+        }
         .onChange(of: status) { _, _ in updateAction() }
         .onChange(of: mood) { _, _ in updateAction() }
         .onDisappear { stopAll() }
+    }
+
+    /// 打开面板时随机一个欢迎/打招呼动作，短暂播放后回正常状态
+    private func playRandomWelcome() {
+        let welcomes = ["welcome", "waving", "joy", "play"]
+        let w = welcomes.randomElement() ?? "welcome"
+        play(w)
+        stopIdleRandom()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            self.updateAction()
+        }
     }
 
     // MARK: 行为决策
@@ -138,7 +177,10 @@ struct WhaleSpriteView: View {
 
     private func tick() {
         let frames = Whale2Assets.frames(for: action)
-        guard frames.count > 1 else { return }
+        let fps = Whale2Assets.fps(for: action)
+        frameAccum += 0.1
+        guard frames.count > 1, frameAccum >= 1.0 / max(fps, 0.1) else { return }
+        frameAccum = 0
         let cfg = Whale2Assets.state(action)
         switch cfg.playback {
         case .loop:
@@ -158,6 +200,7 @@ struct WhaleSpriteView: View {
         action = newAction
         frameIndex = 0
         direction = 1
+        frameAccum = 0
     }
 
     private func startIdleRandom() {
