@@ -81,123 +81,101 @@ enum WhaleBehavior {
 
 // MARK: - 动画视图
 
-struct WhaleSpriteView: NSViewRepresentable {
+/// 鲸鱼娘桌宠视图：SwiftUI Image + aspectRatio(.fit) 完整显示（不裁剪头部），
+/// 帧序列 + Timer 播放，按 DSH 状态联动 + 空闲日常随机。
+struct WhaleSpriteView: View {
     let status: String
     let mood: String?
-    var width: CGFloat = 34
-    var height: CGFloat = 70
+    var width: CGFloat = 40
+    var height: CGFloat = 46
 
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    @State private var action = "idle"
+    @State private var frameIndex = 0
+    @State private var direction = 1
+    @State private var frameTimer: Timer?
+    @State private var idleTimer: Timer?
 
-    @MainActor
-    final class Coordinator: NSObject {
-        var nsView: NSImageView?
-        var frameTimer: Timer?
-        var idleTimer: Timer?
-        var currentAction = ""
-        var frameIndex = 0
-        var direction = 1
-
-        func attach(_ v: NSImageView) { nsView = v }
-
-        func play(_ action: String) {
-            guard let nsView else { return }
-            let frames = Whale2Assets.frames(for: action)
-            guard !frames.isEmpty else { return }
-            let cfg = Whale2Assets.state(action)
-
-            frameTimer?.invalidate()
-            frameTimer = nil
-            frameIndex = 0
-            direction = 1
-            nsView.image = frames[0]
-
-            guard frames.count > 1 else { return } // 单帧动作（think/wait/drag）保持
-
-            let interval = 1.0 / max(cfg.fps, 0.1)
-            switch cfg.playback {
-            case .loop:
-                frameTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-                    guard let self, let nsView = self.nsView else { return }
-                    self.frameIndex = (self.frameIndex + 1) % frames.count
-                    nsView.image = frames[self.frameIndex]
-                }
-            case .pingpong:
-                frameTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-                    guard let self, let nsView = self.nsView else { return }
-                    let next = self.frameIndex + self.direction
-                    if next >= frames.count { self.direction = -1 }
-                    if next < 0 { self.direction = 1 }
-                    self.frameIndex = min(max(next, 0), frames.count - 1)
-                    nsView.image = frames[self.frameIndex]
-                }
-            case .once:
-                frameTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-                    guard let self, let nsView = self.nsView else { return }
-                    self.frameIndex += 1
-                    if self.frameIndex < frames.count {
-                        nsView.image = frames[self.frameIndex]
-                    } else {
-                        self.frameTimer?.invalidate()
-                        self.frameTimer = nil
-                        nsView.image = frames[0]
-                    }
-                }
+    var body: some View {
+        let frames = Whale2Assets.frames(for: action)
+        Group {
+            if let img = frames.isEmpty ? nil : frames[min(frameIndex, frames.count - 1)] {
+                Image(nsImage: img)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)   // 完整显示（头不裁剪）
+            } else {
+                Rectangle().fill(Color.clear)
             }
         }
-
-        /// 空闲日常随机：每 4~7s 随机轮播一个日常动作
-        func startIdleRandom() {
-            guard idleTimer == nil else { return }
-            idleTimer = Timer.scheduledTimer(withTimeInterval: 4.5, repeats: true) { [weak self] _ in
-                guard let self else { return }
-                let action = Whale2Assets.idlePlaylist.randomElement() ?? "idle"
-                self.currentAction = action
-                self.play(action)
-            }
+        .frame(width: width, height: height)
+        .onAppear {
+            updateAction()
         }
-
-        func stopIdleRandom() {
-            idleTimer?.invalidate()
-            idleTimer = nil
-        }
+        .onChange(of: status) { _, _ in updateAction() }
+        .onChange(of: mood) { _, _ in updateAction() }
+        .onDisappear { stopAll() }
     }
 
-    func makeNSView(context: Context) -> NSImageView {
-        let v = NSImageView()
-        v.imageScaling = .scaleProportionallyUpOrDown
-        v.frame.size = NSSize(width: width, height: height)
-        context.coordinator.attach(v)
-        return v
-    }
+    // MARK: 行为决策
 
-    func updateNSView(_ nsView: NSImageView, context: Context) {
-        let c = context.coordinator
-        c.nsView = nsView
-        nsView.frame.size = NSSize(width: width, height: height)
-
-        // 瞬时情绪（庆祝/失败）优先
+    private func updateAction() {
         let target: String
         if let mood {
             target = mood == "celebrate" ? "celebrate" : "error"
-            c.stopIdleRandom()
+            stopIdleRandom()
         } else if status == "idle" {
-            // 空闲：保持当前动作，启动日常随机轮播
-            target = c.currentAction.isEmpty ? "idle" : c.currentAction
-            c.startIdleRandom()
+            target = action.isEmpty ? "idle" : action   // 保持当前，交给随机轮播
+            startIdleRandom()
         } else {
             target = WhaleBehavior.primaryAction(status: status)
-            c.stopIdleRandom()
+            stopIdleRandom()
         }
+        if target != action { play(target) }
+    }
 
-        if target != c.currentAction {
-            c.currentAction = target
-            c.play(target)
+    // MARK: 播放
+
+    private func play(_ newAction: String) {
+        action = newAction
+        frameIndex = 0
+        direction = 1
+        frameTimer?.invalidate()
+        let frames = Whale2Assets.frames(for: newAction)
+        guard frames.count > 1 else { return }
+        let cfg = Whale2Assets.state(newAction)
+        let interval = 1.0 / max(cfg.fps, 0.1)
+        frameTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+            switch cfg.playback {
+            case .loop:
+                frameIndex = (frameIndex + 1) % frames.count
+            case .pingpong:
+                let next = frameIndex + direction
+                if next >= frames.count { direction = -1 }
+                if next < 0 { direction = 1 }
+                frameIndex = min(max(next, 0), frames.count - 1)
+            case .once:
+                if frameIndex < frames.count - 1 { frameIndex += 1 }
+                else { frameIndex = 0 }   // 播放完回第一帧
+            }
         }
     }
 
-    static func dismantleNSView(_ nsView: NSImageView, coordinator: Coordinator) {
-        coordinator.frameTimer?.invalidate()
-        coordinator.idleTimer?.invalidate()
+    private func startIdleRandom() {
+        guard idleTimer == nil else { return }
+        idleTimer = Timer.scheduledTimer(withTimeInterval: 4.5, repeats: true) { _ in
+            let next = Whale2Assets.idlePlaylist.randomElement() ?? "idle"
+            if next != action { play(next) }
+        }
+    }
+
+    private func stopIdleRandom() {
+        idleTimer?.invalidate()
+        idleTimer = nil
+    }
+
+    private func stopAll() {
+        frameTimer?.invalidate()
+        idleTimer?.invalidate()
+        frameTimer = nil
+        idleTimer = nil
     }
 }
