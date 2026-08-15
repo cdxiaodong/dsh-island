@@ -20,6 +20,8 @@ extension Color {
 
 struct PanelView: View {
     @ObservedObject var model: PanelModel
+    /// 进入动画：从顶部小胶囊弹性展开（像 iPhone 灵动岛）
+    @State private var appeared = false
 
     // MioIsland Classic 主题色板
     private let chromeBg = Color(hex: "0A0A0B")
@@ -91,6 +93,15 @@ struct PanelView: View {
                     .stroke(chromeBorder, lineWidth: 1))
         )
         .shadow(color: .black.opacity(0.45), radius: 30, y: 14)
+        // 灵动岛弹性展开：从顶部小胶囊 spring 放大到完整面板
+        .scaleEffect(appeared ? 1 : 0.35, anchor: .top)
+        .opacity(appeared ? 1 : 0)
+        .animation(.spring(response: 0.38, dampingFraction: 0.6), value: appeared)
+        .onAppear {
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.6)) {
+                appeared = true
+            }
+        }
     }
 
     // MARK: 头部

@@ -36,8 +36,7 @@ final class StatusBarController: NSObject {
 
         let popover = NSPopover()
         popover.behavior = .transient
-        popover.animates = true
-        popover.contentViewController = NSHostingController(rootView: PanelView(model: model))
+        popover.animates = false   // 用 SwiftUI 弹性动画，不用系统淡入
         popover.contentSize = NSSize(width: 400, height: 340)
         self.popover = popover
 
@@ -102,6 +101,8 @@ final class StatusBarController: NSObject {
         if popover.isShown {
             popover.performClose(sender)
         } else {
+            // 每次打开重建视图 → PanelView 的 @State 重置 → 弹性展开动画重播
+            popover.contentViewController = NSHostingController(rootView: PanelView(model: model))
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }
