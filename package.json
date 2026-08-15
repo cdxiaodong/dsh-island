@@ -1,12 +1,14 @@
 {
   "name": "dsh-island",
-  "version": "0.1.1",
-  "description": "Real-time DSH agent status bridge to CodeIsland's macOS notch panel — sessions, tool calls, approvals & replies on the Dynamic Island",
+  "version": "0.2.0",
+  "description": "自带 macOS 灵动岛的 DSH 插件 — 插件启动即在刘海区域实时显示会话、工具调用与审批，可直接在面板上批准/拒绝",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "files": [
     "lib",
+    "bin",
+    "panel",
     "cordis.patch.yml",
     "README.md"
   ],

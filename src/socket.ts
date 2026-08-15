@@ -95,10 +95,14 @@ export class CodeIslandSocket {
   }
 }
 
-/** CodeIsland socket 默认路径：/tmp/codeisland-<uid>.sock（可用环境变量覆盖）。 */
+/**
+ * dsh-island 面板的默认 Unix socket 路径。
+ * 插件启动时自动拉起 macOS 灵动岛面板，面板监听此路径；插件把事件写进来。
+ * 可用 DSH_ISLAND_SOCKET_PATH 覆盖（测试/自定义端口）。
+ */
 export function defaultSocketPath(): string {
-  if (process.env.CODEISLAND_SOCKET_PATH) return process.env.CODEISLAND_SOCKET_PATH
-  return `/tmp/codeisland-${process.getuid?.() ?? 0}.sock`
+  if (process.env.DSH_ISLAND_SOCKET_PATH) return process.env.DSH_ISLAND_SOCKET_PATH
+  return `/tmp/dsh-island-${process.getuid?.() ?? 0}.sock`
 }
 
 export interface SendResult {
