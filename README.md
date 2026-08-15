@@ -91,9 +91,22 @@ npm install
 npm run build        # tsc → lib/
 npm test             # node --test，8 个用例
 npm run demo         # 模拟完整 DSH 会话 → 生成 docs/demo-panel.html + 截图
+node scripts/mock-codeisland.mjs   # 无 CodeIsland 应用时的 socket 接收端演示
 ```
 
 测试用 `@deepseek-ai/cordis` 兼容语义的 `cordis` Context 精确模拟 DSH 宿主的事件通道（`tools/*`、`approval/request` 均按宿主真实 waterfall 签名 `(exec, next)` 调用）。
+
+## 无 CodeIsland 应用的演示
+
+未安装 CodeIsland 时，用自带 mock 接收端实时观察事件流：
+
+```bash
+# 终端 1：启动 mock 刘海面板接收端
+node scripts/mock-codeisland.mjs
+
+# 终端 2：启动 DSH 并发消息，终端 1 会实时打印事件
+dsh web
+```
 
 ## 参考
 
