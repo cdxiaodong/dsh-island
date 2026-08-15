@@ -1,6 +1,6 @@
 {
   "name": "dsh-island",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Real-time DSH agent status bridge to CodeIsland's macOS notch panel — sessions, tool calls, approvals & replies on the Dynamic Island",
   "type": "module",
   "main": "lib/index.js",
