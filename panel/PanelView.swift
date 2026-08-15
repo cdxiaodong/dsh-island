@@ -131,6 +131,9 @@ struct PanelView: View {
             if model.subagentCount > 0 {
                 Label("\(model.subagentCount) 子代理", systemImage: "person.2.fill")
             }
+            if model.sessionCount > 1 {
+                Label("\(model.sessionCount) 会话", systemImage: "rectangle.stack")
+            }
             if model.usageTokens > 0 {
                 Label(formatTokens(model.usageTokens), systemImage: "flame.fill")
             }

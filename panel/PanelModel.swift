@@ -38,6 +38,8 @@ final class PanelModel: ObservableObject {
     @Published var subagentCount: Int = 0     // 活跃子代理数
     @Published var sessionStart: Date?        // 会话开始时间（会话时长用）
     @Published var usageTokens: Int = 0       // token 消耗（TS 侧注入）
+    @Published var sessionCount = 1           // 活跃会话数（多会话汇总）
+    private var seenSessions = Set<String>()
 
     /// 托盘显示文本：状态 + 动态后缀
     var trayText: String {
@@ -81,7 +83,13 @@ final class PanelModel: ObservableObject {
         let session = raw["session_id"] as? String
 
         if let s = raw["cwd"] as? String, !s.isEmpty { cwd = s }
-        if let s = session, !s.isEmpty { sessionId = s }
+        if let s = session, !s.isEmpty {
+            sessionId = s
+            if !seenSessions.contains(s) {
+                seenSessions.insert(s)
+                sessionCount = seenSessions.count
+            }
+        }
         if let m = message, m.hasPrefix("Agent status:") {
             status = String(m.dropFirst("Agent status:".count)).trimmingCharacters(in: .whitespaces)
         }
