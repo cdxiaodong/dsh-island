@@ -75,41 +75,46 @@ final class StatusBarController: NSObject {
         button.imageScaling = .scaleNone
     }
 
-    /// 绘制 DSH 浅蓝胶囊图（配色取自 dsh-web-ui blue-fantasy 皮肤）：
-    /// 浅蓝 #7f96d2 底 + 深蓝 #2c3765 字 + 鲸鱼娘半身，最小宽度保证够宽
+    /// 绘制 DSH 浅蓝胶囊图：更浅蓝渐变底 + 深蓝粗体字（高对比）+ 鲸鱼娘，最小宽 120
     static func renderCapsule(text: String) -> NSImage {
-        let font = NSFont.systemFont(ofSize: 12, weight: .semibold)
+        let font = NSFont.systemFont(ofSize: 12, weight: .bold)
         let textSize = (text as NSString).size(withAttributes: [.font: font])
-        let iconW: CGFloat = 20
+        let iconW: CGFloat = 22
         let padding: CGFloat = 16
         let height: CGFloat = 22
-        // 最小宽度 108：文字短也保持宽胶囊
-        let width = max(108, iconW + textSize.width + padding * 2)
+        let width = max(120, iconW + textSize.width + padding * 2)
 
         let img = NSImage(size: NSSize(width: width, height: height))
         img.lockFocus()
         defer { img.unlockFocus() }
 
-        // blue-fantasy 浅蓝 #7f96d2 胶囊
+        // 更浅蓝渐变胶囊（上 #b8c6ec → 下 #8ea2d8）
         let capsule = NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: width, height: height),
                                    xRadius: height / 2, yRadius: height / 2)
-        NSColor(calibratedRed: 0.498, green: 0.588, blue: 0.824, alpha: 1).setFill()  // #7f96d2
-        capsule.fill()
+        let gradient = NSGradient(colors: [
+            NSColor(calibratedRed: 0.722, green: 0.776, blue: 0.925, alpha: 1),  // #b8c6ec
+            NSColor(calibratedRed: 0.557, green: 0.635, blue: 0.847, alpha: 1),  // #8ea2d8
+        ])
+        gradient?.draw(in: capsule, angle: -90)
+        // 细边框（深一档）
+        NSColor(calibratedRed: 0.40, green: 0.48, blue: 0.68, alpha: 0.85).setStroke()
+        capsule.lineWidth = 1
+        capsule.stroke()
         // 顶部细高光
-        NSColor(calibratedWhite: 1, alpha: 0.30).setFill()
-        NSBezierPath(roundedRect: NSRect(x: 1.5, y: height - 9, width: width - 3, height: 6),
+        NSColor(calibratedWhite: 1, alpha: 0.40).setFill()
+        NSBezierPath(roundedRect: NSRect(x: 2, y: height - 9, width: width - 4, height: 6),
                      xRadius: 3, yRadius: 3).fill()
 
         // 鲸鱼娘半身（左侧）
         if let icon = Self.loadMenuIcon() {
-            icon.draw(in: NSRect(x: padding, y: 2, width: 18, height: 18))
+            icon.draw(in: NSRect(x: padding, y: 1, width: 20, height: 20))
         }
-        // 深蓝 #2c3765 状态文字
+        // 深蓝粗体状态文字（#0e1835，浅蓝上高对比）
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: NSColor(calibratedRed: 0.173, green: 0.216, blue: 0.396, alpha: 1),
+            .foregroundColor: NSColor(calibratedRed: 0.055, green: 0.094, blue: 0.208, alpha: 1),
         ]
-        let textX = padding + iconW + 5
+        let textX = padding + iconW + 4
         (text as NSString).draw(at: NSPoint(x: textX, y: 3.5), withAttributes: attrs)
 
         return img
