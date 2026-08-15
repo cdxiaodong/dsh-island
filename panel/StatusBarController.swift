@@ -48,6 +48,10 @@ final class StatusBarController: NSObject {
     }
 
     func show() {
+        // 恢复上次选择的鲸鱼娘皮肤
+        if let skin = UserDefaults.standard.string(forKey: "dsh_island_skin") {
+            Whale2Assets.setSkin(skin)
+        }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
             button.image = Self.renderCapsule(text: "空闲", status: "idle")
@@ -169,6 +173,25 @@ final class StatusBarController: NSObject {
         sendCtlCommand("menu_click", id)
     }
 
+    /// 切换鲸鱼娘皮肤（换装）
+    @objc private func skinClicked(_ sender: NSMenuItem) {
+        guard let skin = sender.representedObject as? String else { return }
+        Whale2Assets.setSkin(skin)
+        UserDefaults.standard.set(skin, forKey: "dsh_island_skin")
+        refreshButton()
+        statusItem?.button?.menu = buildMenu()   // 更新勾选
+    }
+
+    private func skinDisplayName(_ skin: String) -> String {
+        switch skin {
+        case "pink": return "🌸 樱花粉"
+        case "ocean": return "🌊 深海蓝"
+        case "gold": return "✨ 鎏金"
+        case "violet": return "🔮 紫罗兰"
+        default: return "🐋 原版"
+        }
+    }
+
     /// 点击插件管理项 → 启用/关闭插件
     @objc private func pluginToggleClicked(_ sender: NSMenuItem) {
         guard let id = sender.representedObject as? String,
@@ -233,6 +256,19 @@ final class StatusBarController: NSObject {
                 menu.addItem(mi)
             }
         }
+        // 皮肤（鲸鱼娘换装）
+        let skinSubmenu = NSMenu()
+        for skin in Whale2Assets.skinNames {
+            let mi = NSMenuItem(title: skinDisplayName(skin), action: #selector(skinClicked(_:)), keyEquivalent: "")
+            mi.target = self
+            mi.representedObject = skin
+            mi.state = (skin == Whale2Assets.currentSkin) ? .on : .off
+            skinSubmenu.addItem(mi)
+        }
+        let skinMenu = NSMenuItem(title: "鲸鱼娘皮肤", action: nil, keyEquivalent: "")
+        skinMenu.submenu = skinSubmenu
+        menu.addItem(skinMenu)
+
         // 插件管理（动态监测 DSH 插件 + 启用/关闭）
         if !pluginList.isEmpty {
             let submenu = NSMenu()

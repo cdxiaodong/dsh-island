@@ -142,6 +142,18 @@ final class SocketServer {
 
         let name = json["hook_event_name"] as? String ?? ""
 
+        // 桌面通知（审批 / 失败 / 会话结束）
+        switch name {
+        case "PermissionRequest":
+            notify(title: "🛡️ 需要审批", body: json["question"] as? String ?? "DSH 请求你确认操作")
+        case "PostToolUseFailure":
+            notify(title: "❌ 任务失败", body: "DSH 的一个工具调用失败了")
+        case "SessionEnd":
+            notify(title: "✅ 会话结束", body: "DeepSeek Harness 会话已结束")
+        default:
+            break
+        }
+
         if name == "PermissionRequest" {
             // 阻塞事件：显示审批卡，保持连接等待用户决策
             model.approval = ApprovalCard(
@@ -166,6 +178,15 @@ final class SocketServer {
         send(conn, resp)
         model.pendingConnection = nil
         model.approval = nil
+    }
+
+    /// 桌面通知（NSUserNotification —— 裸二进制无 bundle，不能用 UNUserNotificationCenter）
+    private func notify(title: String, body: String) {
+        let notification = NSUserNotification()
+        notification.title = title
+        notification.informativeText = body
+        notification.soundName = NSUserNotificationDefaultSoundName
+        NSUserNotificationCenter.default.deliver(notification)
     }
 
     /// 发送后等数据真正交给协议栈再关闭连接（立即 cancel 会丢弃未发出的数据）
