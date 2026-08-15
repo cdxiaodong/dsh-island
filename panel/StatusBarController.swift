@@ -75,48 +75,48 @@ final class StatusBarController: NSObject {
         button.imageScaling = .scaleNone
     }
 
-    /// 绘制 DSH 浅蓝胶囊图：浅蓝渐变底 + 深蓝粗字 + 状态点 + 鲸鱼娘，最小宽 120
+    /// 绘制 DSH 浅蓝胶囊图：亮浅蓝渐变底 + 深蓝粗字 + 状态点 + 鲸鱼娘，最小宽 140
     static func renderCapsule(text: String, status: String) -> NSImage {
-        let font = NSFont.systemFont(ofSize: 12, weight: .bold)
+        let font = NSFont.systemFont(ofSize: 12.5, weight: .bold)
         let textSize = (text as NSString).size(withAttributes: [.font: font])
-        let iconW: CGFloat = 22
-        let dotW: CGFloat = 10
-        let padding: CGFloat = 16
-        let height: CGFloat = 22
-        let width = max(120, iconW + textSize.width + dotW + padding * 2)
+        let iconW: CGFloat = 24
+        let dotW: CGFloat = 11
+        let padding: CGFloat = 18
+        let height: CGFloat = 24
+        let width = max(140, iconW + textSize.width + dotW + padding * 2)
 
         let img = NSImage(size: NSSize(width: width, height: height))
         img.lockFocus()
         defer { img.unlockFocus() }
 
-        // 更浅蓝渐变胶囊（上 #b8c6ec → 下 #8ea2d8）
+        // 亮浅蓝渐变胶囊（上 #A8CCFF → 下 #7FA8F0）
         let capsule = NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: width, height: height),
                                    xRadius: height / 2, yRadius: height / 2)
         let gradient = NSGradient(colors: [
-            NSColor(calibratedRed: 0.722, green: 0.776, blue: 0.925, alpha: 1),  // #b8c6ec
-            NSColor(calibratedRed: 0.557, green: 0.635, blue: 0.847, alpha: 1),  // #8ea2d8
+            NSColor(calibratedRed: 0.659, green: 0.800, blue: 1.0, alpha: 1),    // #A8CCFF
+            NSColor(calibratedRed: 0.498, green: 0.659, blue: 0.941, alpha: 1),  // #7FA8F0
         ])
         gradient?.draw(in: capsule, angle: -90)
         // 细边框（深一档）
-        NSColor(calibratedRed: 0.40, green: 0.48, blue: 0.68, alpha: 0.85).setStroke()
+        NSColor(calibratedRed: 0.35, green: 0.47, blue: 0.75, alpha: 0.9).setStroke()
         capsule.lineWidth = 1
         capsule.stroke()
         // 顶部细高光
-        NSColor(calibratedWhite: 1, alpha: 0.40).setFill()
-        NSBezierPath(roundedRect: NSRect(x: 2, y: height - 9, width: width - 4, height: 6),
+        NSColor(calibratedWhite: 1, alpha: 0.45).setFill()
+        NSBezierPath(roundedRect: NSRect(x: 2, y: height - 10, width: width - 4, height: 7),
                      xRadius: 3, yRadius: 3).fill()
 
         // 鲸鱼娘半身（左侧）
         if let icon = Self.loadMenuIcon() {
-            icon.draw(in: NSRect(x: padding, y: 1, width: 20, height: 20))
+            icon.draw(in: NSRect(x: padding, y: 2, width: 20, height: 20))
         }
         // 状态点（文字前）
         let dotX = padding + iconW + 2
         let dotColor: NSColor
         switch status {
-        case "waitingApproval": dotColor = NSColor(calibratedRed: 0.96, green: 0.72, blue: 0.10, alpha: 1)  // 琥珀
-        case "running", "processing": dotColor = NSColor(calibratedRed: 0.05, green: 0.65, blue: 0.75, alpha: 1)  // 青
-        default: dotColor = NSColor(calibratedRed: 0.30, green: 0.38, blue: 0.55, alpha: 1)  // 蓝灰
+        case "waitingApproval": dotColor = NSColor(calibratedRed: 0.96, green: 0.72, blue: 0.10, alpha: 1)
+        case "running", "processing": dotColor = NSColor(calibratedRed: 0.05, green: 0.62, blue: 0.72, alpha: 1)
+        default: dotColor = NSColor(calibratedRed: 0.30, green: 0.42, blue: 0.62, alpha: 1)
         }
         dotColor.setFill()
         NSBezierPath(ovalIn: NSRect(x: dotX, y: height / 2 - 3, width: 6, height: 6)).fill()
@@ -124,10 +124,10 @@ final class StatusBarController: NSObject {
         // 深蓝粗体状态文字
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: NSColor(calibratedRed: 0.055, green: 0.094, blue: 0.208, alpha: 1),
+            .foregroundColor: NSColor(calibratedRed: 0.09, green: 0.19, blue: 0.37, alpha: 1),
         ]
         let textX = dotX + dotW + 1
-        (text as NSString).draw(at: NSPoint(x: textX, y: 3.5), withAttributes: attrs)
+        (text as NSString).draw(at: NSPoint(x: textX, y: 4), withAttributes: attrs)
 
         return img
     }
