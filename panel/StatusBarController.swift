@@ -33,6 +33,10 @@ final class StatusBarController: NSObject {
     private var pluginItems: [PluginMenuItem] = []
     /// DSH 运行时插件列表（动态监测）
     private var pluginList: [IslandPlugin] = []
+    // 托盘鲸鱼娘动画
+    private var whaleTimer: AnyCancellable?
+    private var whaleFrameIndex = 0
+    private var whaleAction = "idle"
 
     private let panelSize = NSSize(width: 400, height: 360)
 
@@ -70,6 +74,12 @@ final class StatusBarController: NSObject {
                 self?.statusItem?.button?.menu = self?.buildMenu()
             }
         }
+
+        // 托盘鲸鱼娘动画：每 0.12s 推进一帧，重绘胶囊
+        whaleTimer = Timer.publish(every: 0.12, on: .main, in: .common).autoconnect()
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated { self?.tickWhale() }
+            }
     }
 
     func hide() {
@@ -84,8 +94,31 @@ final class StatusBarController: NSObject {
 
     private func refreshButton() {
         guard let button = statusItem?.button else { return }
-        button.image = Self.renderCapsule(text: model.trayText, status: model.status)
+        let frames = Whale2Assets.frames(for: whaleAction)
+        let frame = frames.isEmpty ? nil : frames[min(whaleFrameIndex, frames.count - 1)]
+        button.image = Self.renderCapsule(text: model.trayText, status: model.status, whaleFrame: frame)
         button.imageScaling = .scaleNone
+    }
+
+    // MARK: 托盘鲸鱼娘动画
+
+    private func tickWhale() {
+        let action = currentWhaleAction()
+        if action != whaleAction { whaleAction = action; whaleFrameIndex = 0 }
+        let frames = Whale2Assets.frames(for: whaleAction)
+        guard !frames.isEmpty else { return }
+        whaleFrameIndex = (whaleFrameIndex + 1) % frames.count
+        refreshButton()
+    }
+
+    /// 根据 DSH 状态/情绪决定托盘鲸鱼娘动作
+    private func currentWhaleAction() -> String {
+        if let mood = model.mood { return mood == "celebrate" ? "celebrate" : "error" }
+        switch model.status {
+        case "waitingApproval": return "wait"
+        case "running", "processing": return Bool.random() ? "working" : "think"
+        default: return "idle"
+        }
     }
 
     // MARK: 插件菜单
@@ -250,8 +283,9 @@ final class StatusBarController: NSObject {
 
     // MARK: 胶囊图
 
-    /// 绘制 DSH 浅蓝胶囊图：浅蓝渐变底 + 深蓝粗字 + 状态点 + 鲸鱼娘，最小宽 130
-    static func renderCapsule(text: String, status: String) -> NSImage {
+    /// 绘制 DSH 浅蓝胶囊图：浅蓝渐变底 + 深蓝粗字 + 状态点 + 鲸鱼娘半身，最小宽 130
+    /// - Parameter whaleFrame: 当前鲸鱼娘动画帧（画其顶部 55% 半身）；nil 用静态半身图标
+    static func renderCapsule(text: String, status: String, whaleFrame: NSImage? = nil) -> NSImage {
         let font = NSFont.systemFont(ofSize: 12.5, weight: .bold)
         let textSize = (text as NSString).size(withAttributes: [.font: font])
         let iconW: CGFloat = 24
@@ -278,8 +312,14 @@ final class StatusBarController: NSObject {
         NSBezierPath(roundedRect: NSRect(x: 2, y: height - 10, width: width - 4, height: 7),
                      xRadius: 3, yRadius: 3).fill()
 
-        if let icon = Self.loadMenuIcon() {
-            icon.draw(in: NSRect(x: padding, y: 2, width: 20, height: 20))
+        // 鲸鱼娘半身（用当前动画帧的顶部 55%，半身更清晰）
+        if let frame = whaleFrame {
+            let src = NSRect(x: 0, y: frame.size.height * 0.45,
+                             width: frame.size.width, height: frame.size.height * 0.55)
+            frame.draw(in: NSRect(x: padding, y: 1, width: 28, height: 26),
+                       from: src, operation: .sourceOver, fraction: 1)
+        } else if let icon = Self.loadMenuIcon() {
+            icon.draw(in: NSRect(x: padding, y: 2, width: 22, height: 22))
         }
         let dotX = padding + iconW + 2
         let dotColor: NSColor

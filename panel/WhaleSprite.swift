@@ -7,6 +7,7 @@
 //   - 空闲日常随机：idle 时每 4~7s 随机轮播 walk/play/joy/welcome/disappointed 等
 import AppKit
 import SwiftUI
+import Combine
 
 // MARK: - 资源与配置
 
@@ -82,7 +83,7 @@ enum WhaleBehavior {
 // MARK: - 动画视图
 
 /// 鲸鱼娘桌宠视图：SwiftUI Image + aspectRatio(.fit) 完整显示（不裁剪头部），
-/// 帧序列 + Timer 播放，按 DSH 状态联动 + 空闲日常随机。
+/// Timer.publish 帧驱动（SwiftUI 原生，可靠），按 DSH 状态联动 + 空闲日常随机。
 struct WhaleSpriteView: View {
     let status: String
     let mood: String?
@@ -92,13 +93,15 @@ struct WhaleSpriteView: View {
     @State private var action = "idle"
     @State private var frameIndex = 0
     @State private var direction = 1
-    @State private var frameTimer: Timer?
     @State private var idleTimer: Timer?
+
+    /// 全局帧时钟：每 0.1s 推进一帧（不同动作共用，循环即可）
+    private let ticker = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         let frames = Whale2Assets.frames(for: action)
         Group {
-            if let img = frames.isEmpty ? nil : frames[min(frameIndex, frames.count - 1)] {
+            if let img = frames.isEmpty ? nil : frames[min(frameIndex, max(frames.count - 1, 0))] {
                 Image(nsImage: img)
                     .resizable()
                     .aspectRatio(contentMode: .fit)   // 完整显示（头不裁剪）
@@ -107,9 +110,8 @@ struct WhaleSpriteView: View {
             }
         }
         .frame(width: width, height: height)
-        .onAppear {
-            updateAction()
-        }
+        .onReceive(ticker) { _ in tick() }
+        .onAppear { updateAction() }
         .onChange(of: status) { _, _ in updateAction() }
         .onChange(of: mood) { _, _ in updateAction() }
         .onDisappear { stopAll() }
@@ -132,31 +134,30 @@ struct WhaleSpriteView: View {
         if target != action { play(target) }
     }
 
-    // MARK: 播放
+    // MARK: 帧推进
+
+    private func tick() {
+        let frames = Whale2Assets.frames(for: action)
+        guard frames.count > 1 else { return }
+        let cfg = Whale2Assets.state(action)
+        switch cfg.playback {
+        case .loop:
+            frameIndex = (frameIndex + 1) % frames.count
+        case .pingpong:
+            let next = frameIndex + direction
+            if next >= frames.count { direction = -1 }
+            if next < 0 { direction = 1 }
+            frameIndex = min(max(next, 0), frames.count - 1)
+        case .once:
+            if frameIndex < frames.count - 1 { frameIndex += 1 }
+            else { frameIndex = 0 }   // 播放完回第一帧
+        }
+    }
 
     private func play(_ newAction: String) {
         action = newAction
         frameIndex = 0
         direction = 1
-        frameTimer?.invalidate()
-        let frames = Whale2Assets.frames(for: newAction)
-        guard frames.count > 1 else { return }
-        let cfg = Whale2Assets.state(newAction)
-        let interval = 1.0 / max(cfg.fps, 0.1)
-        frameTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            switch cfg.playback {
-            case .loop:
-                frameIndex = (frameIndex + 1) % frames.count
-            case .pingpong:
-                let next = frameIndex + direction
-                if next >= frames.count { direction = -1 }
-                if next < 0 { direction = 1 }
-                frameIndex = min(max(next, 0), frames.count - 1)
-            case .once:
-                if frameIndex < frames.count - 1 { frameIndex += 1 }
-                else { frameIndex = 0 }   // 播放完回第一帧
-            }
-        }
     }
 
     private func startIdleRandom() {
@@ -173,9 +174,7 @@ struct WhaleSpriteView: View {
     }
 
     private func stopAll() {
-        frameTimer?.invalidate()
         idleTimer?.invalidate()
-        frameTimer = nil
         idleTimer = nil
     }
 }
