@@ -54,19 +54,28 @@ final class StatusBarController: NSObject {
     private func refreshButton() {
         guard let button = statusItem?.button else { return }
         let text: String
+        let color: NSColor
         switch model.status {
         case "waitingApproval":
-            text = "🛡️ 需要授权"
+            text = "🛡️ 等待授权"
+            color = .systemYellow
         case "running", "processing":
-            if let tool = model.currentTool {
-                text = "🔧 \(tool)"
-            } else {
-                text = "🔧 运行中"
-            }
+            text = model.currentTool.map { "🔧 \($0)" } ?? "🔧 运行中"
+            color = .systemCyan
+        case "idle":
+            text = "🐋 DSH"
+            color = .labelColor
         default:
             text = "🐋 DSH"
+            color = .labelColor
         }
-        button.title = text
+        button.attributedTitle = NSAttributedString(
+            string: text,
+            attributes: [
+                .font: NSFont.systemFont(ofSize: 12, weight: .medium),
+                .foregroundColor: color,
+            ]
+        )
     }
 
     // MARK: Popover
