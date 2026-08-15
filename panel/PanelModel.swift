@@ -37,6 +37,7 @@ final class PanelModel: ObservableObject {
     @Published var toolCount: Int = 0          // 本次会话工具调用数
     @Published var subagentCount: Int = 0     // 活跃子代理数
     @Published var sessionStart: Date?        // 会话开始时间（会话时长用）
+    @Published var usageTokens: Int = 0       // token 消耗（TS 侧注入）
 
     /// 托盘显示文本：状态 + 动态后缀
     var trayText: String {

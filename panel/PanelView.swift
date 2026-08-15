@@ -84,6 +84,11 @@ struct PanelView: View {
                                    startPoint: .top, endPoint: .bottom)
                 )
             Divider().overlay(Color(hex: "6E83C4").opacity(0.6))
+            // 用量行（工具/耗时/子代理/token）
+            usageRow
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+            Divider().overlay(chromeBorder)
             // 深色内容区
             VStack(alignment: .leading, spacing: 0) {
                 if model.approval != nil {
@@ -115,6 +120,35 @@ struct PanelView: View {
                 appeared = true
             }
         }
+    }
+
+    // MARK: 用量行
+
+    private var usageRow: some View {
+        HStack(spacing: 10) {
+            Label("\(model.toolCount) 工具", systemImage: "hammer.fill")
+            Label(elapsedText, systemImage: "clock")
+            if model.subagentCount > 0 {
+                Label("\(model.subagentCount) 子代理", systemImage: "person.2.fill")
+            }
+            if model.usageTokens > 0 {
+                Label(formatTokens(model.usageTokens), systemImage: "flame.fill")
+            }
+            Spacer()
+        }
+        .font(.system(size: 9.5, weight: .medium))
+        .foregroundStyle(Color(hex: "0E1835"))
+    }
+
+    private var elapsedText: String {
+        guard let start = model.sessionStart else { return "—" }
+        return PanelModel.formatElapsed(since: start)
+    }
+
+    private func formatTokens(_ n: Int) -> String {
+        if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
+        if n >= 1_000 { return String(format: "%.1fk", Double(n) / 1_000) }
+        return "\(n)"
     }
 
     // MARK: 头部（浅蓝品牌区，文字深蓝）
