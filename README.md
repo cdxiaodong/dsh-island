@@ -98,13 +98,22 @@ node scripts/mock-codeisland.mjs   # 无 CodeIsland 应用时的 socket 接收�
 
 ## 无 CodeIsland 应用的演示
 
-未安装 CodeIsland 时，用自带 mock 接收端实时观察事件流：
+**实时可视化面板**（推荐）：无需 API key，点一下按钮用真实插件跑完整会话。
 
 ```bash
-# 终端 1：启动 mock 刘海面板接收端
-node scripts/mock-codeisland.mjs
+node scripts/live-panel.mjs          # → http://127.0.0.1:3081
+```
 
-# 终端 2：启动 DSH 并发消息，终端 1 会实时打印事件
+浏览器打开面板，点「▶ 模拟一次完整会话」即可看到 SessionStart → 工具调用 → 高危命令审批卡 → SessionEnd 全流程实时渲染。面板同时监听 CodeIsland socket——若你正在运行真实 DSH（配好模型后发消息），事件也会实时进面板。
+
+![实时面板 - 审批卡](docs/live-panel-approval.png)
+
+**命令行 mock 接收端**：只打印事件流。
+
+```bash
+node scripts/mock-codeisland.mjs     # 终端实时打印事件
+
+# 终端 2：启动 DSH 并发消息，终端 1 会实时打印
 dsh web
 ```
 
