@@ -1,0 +1,43 @@
+{
+  "name": "dsh-island",
+  "version": "0.1.0",
+  "description": "Real-time DSH agent status bridge to CodeIsland's macOS notch panel — sessions, tool calls, approvals & replies on the Dynamic Island",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "codeisland",
+    "notch",
+    "dynamic-island",
+    "agent",
+    "status",
+    "realtime"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "demo": "node scripts/demo.mjs",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "dependencies": {
+    "cordis": "^4.0.0-rc.8"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@types/node": "^26.2.0",
+    "typescript": "^5.5.0"
+  },
+  "license": "MIT"
+}

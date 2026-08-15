@@ -1,0 +1,4 @@
+# cordis.patch.yml —— 把 dsh-island 插入 DSH 宿主模块树
+plugins:
+  dsh-island:
+    $entry: ./lib/index.js
