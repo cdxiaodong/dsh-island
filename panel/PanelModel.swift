@@ -30,6 +30,9 @@ final class PanelModel: ObservableObject {
     @Published var events: [EventRow] = []
     @Published var approval: ApprovalCard?
 
+    /// 瞬时情绪：celebrate（成功）/ error（失败），2s 后自动清空
+    @Published var mood: String?
+
     /// PermissionRequest 保持的连接，审批后由 SocketServer 回写决策
     var pendingConnection: NWConnection?
 
@@ -70,5 +73,18 @@ final class PanelModel: ObservableObject {
 
         events.insert(EventRow(name: name, tool: tool, question: question, message: message), at: 0)
         if events.count > maxEvents { events.removeLast() }
+
+        // 瞬时情绪（鲸鱼娘庆祝/失败）
+        if name == "PostToolUse" { setMood("celebrate") }
+        if name == "PostToolUseFailure" { setMood("error") }
+    }
+
+    private func setMood(_ m: String) {
+        mood = m
+        let marker = m
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            if mood == marker { mood = nil }
+        }
     }
 }

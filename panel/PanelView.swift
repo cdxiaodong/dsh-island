@@ -107,10 +107,10 @@ struct PanelView: View {
     // MARK: 头部
     private var header: some View {
         HStack(spacing: 11) {
-            // 鲸鱼娘动画吉祥物（裁边后头完整）
-            WhaleSpriteView(state: WhaleAssets.spriteState(for: model.status), width: 32, height: 65)
-                .frame(width: 32, height: 65)
-                .padding(.trailing, 2)
+            // 鲸鱼娘桌宠动画（15 动作 + 日常随机 + 状态联动）
+            WhaleSpriteView(status: model.status, mood: model.mood, width: 40, height: 46)
+                .frame(width: 40, height: 46)
+                .padding(.trailing, 4)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("DeepSeek Harness")

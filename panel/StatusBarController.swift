@@ -54,14 +54,14 @@ final class StatusBarController: NSObject {
 
     // MARK: 菜单栏图标（半身鲸鱼娘）
 
-    /// 加载半身鲸鱼娘图标（<exec>/whale/menu-icon.png，开发时回退源码目录）
+    /// 加载半身鲸鱼娘图标（<exec>/whale2/menu-icon.png，开发时回退源码目录）
     static func loadMenuIcon() -> NSImage? {
         let execDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
-        let bundled = execDir.appendingPathComponent("whale/menu-icon.png")
-        let source = execDir.deletingLastPathComponent().appendingPathComponent("panel/resources/whale/menu-icon.png")
+        let bundled = execDir.appendingPathComponent("whale2/menu-icon.png")
+        let source = execDir.deletingLastPathComponent().appendingPathComponent("panel/resources/whale2/menu-icon.png")
         let url = FileManager.default.fileExists(atPath: bundled.path) ? bundled : source
         guard let img = NSImage(contentsOf: url) else { return nil }
-        img.size = NSSize(width: 17, height: 19)
+        img.size = NSSize(width: 18, height: 20)
         return img
     }
 
