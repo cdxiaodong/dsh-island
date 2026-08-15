@@ -18,6 +18,10 @@ MainActor.assumeIsolated {
     server.onMenuUpdate = { [weak controller] items in
         controller?.updatePluginMenu(items)
     }
+    // 插件列表 → 右键菜单「插件管理」
+    server.onPluginList = { [weak controller] plugins in
+        controller?.updatePluginList(plugins)
+    }
     controller.show()
 
     app.run()

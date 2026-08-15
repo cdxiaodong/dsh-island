@@ -74,6 +74,10 @@ export class IslandService extends Service {
   /** 其他插件注册的菜单项 */
   private menuItems: IslandMenuItem[] = []
   private ctlServer?: ReturnType<typeof createServer>
+  /** 插件管理：name → { callback, runtime }（registry 快照） */
+  private pluginRegistry = new Map<string, { callback: unknown; runtime: { name?: string; callback?: unknown; Config?: unknown } }>()
+  /** 被禁用的插件缓存（enable 时恢复） */
+  private disabledPlugins = new Map<string, { name: string; callback: unknown; Config?: unknown }>()
 
   constructor(ctx: Context, config: Config = {}) {
     super(ctx, 'island')
@@ -235,7 +239,7 @@ export class IslandService extends Service {
     }, { wait: false }).catch(() => {})
   }
 
-  /** 监听面板发来的菜单点击（控制 socket /tmp/dsh-island-ctl-<uid>.sock） */
+  /** 监听面板发来的命令（控制 socket /tmp/dsh-island-ctl-<uid>.sock） */
   private startCtlServer() {
     const ctlPath = this.ctlSocketPath()
     try { unlinkSync(ctlPath) } catch { /* ignore */ }
@@ -244,11 +248,26 @@ export class IslandService extends Service {
       conn.on('data', (d) => chunks.push(Buffer.isBuffer(d) ? d : Buffer.from(d)))
       conn.on('end', () => {
         try {
-          const msg = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { type?: string; id?: string }
-          if (msg.type === 'menu_click' && msg.id) {
-            const item = this.menuItems.find((i) => i.id === msg.id)
-            void item?.action?.()
-            this.debug('menu_click', msg.id)
+          const msg = JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
+            type?: string; id?: string
+          }
+          switch (msg.type) {
+            case 'menu_click':
+              if (msg.id) {
+                const item = this.menuItems.find((i) => i.id === msg.id)
+                void item?.action?.()
+                this.debug('menu_click', msg.id)
+              }
+              break
+            case 'plugin_list':
+              void this.sendPluginList()
+              break
+            case 'plugin_disable':
+              if (msg.id) this.disablePlugin(msg.id)
+              break
+            case 'plugin_enable':
+              if (msg.id) this.enablePlugin(msg.id)
+              break
           }
         } catch { /* ignore */ }
       })
@@ -256,6 +275,76 @@ export class IslandService extends Service {
     })
     this.ctlServer.on('error', () => {})
     this.ctlServer.listen(ctlPath)
+  }
+
+  // ---- 插件管理（动态监测 + 启用/关闭）----
+
+  /** 收集 registry 里已加载的插件快照 */
+  private collectPlugins() {
+    this.pluginRegistry.clear()
+    try {
+      const registry = (this.ctx as any).registry
+      for (const [key, runtime] of registry.entries()) {
+        if (runtime?.name && typeof runtime.name === 'string') {
+          this.pluginRegistry.set(runtime.name, { callback: key, runtime })
+        }
+      }
+    } catch { /* registry 不可用 */ }
+  }
+
+  /** 把插件列表发给面板（plugin_list → 右键菜单「插件管理」） */
+  private async sendPluginList() {
+    this.collectPlugins()
+    if (!this.client.available()) return
+    const plugins = [...this.pluginRegistry.entries()]
+      .filter(([name]) => name !== 'dsh-island' && name !== 'IslandService')
+      .map(([name]) => ({
+        id: name,
+        title: name,
+        running: true,
+      }))
+    await this.client.send({ type: 'plugin_list', plugins }, { wait: false }).catch(() => {})
+    this.debug('plugin_list', plugins.length)
+  }
+
+  /** 关闭插件（registry.delete + 缓存以便恢复） */
+  disablePlugin(id: string): boolean {
+    this.collectPlugins()
+    const entry = this.pluginRegistry.get(id)
+    if (!entry || id === 'dsh-island' || id === 'IslandService') return false
+    try {
+      const registry = (this.ctx as any).registry
+      // 缓存被禁插件的回调/Config，enable 时恢复
+      this.disabledPlugins.set(id, {
+        name: entry.runtime.name ?? id,
+        callback: entry.callback,
+        Config: entry.runtime.Config,
+      })
+      registry.delete(entry.callback)
+      this.debug('plugin_disable', id)
+      return true
+    } catch { return false }
+  }
+
+  /** 启用插件（从禁用缓存恢复，或 registry 快照重建） */
+  enablePlugin(id: string): boolean {
+    try {
+      const saved = this.disabledPlugins.get(id)
+      if (saved) {
+        ;(this.ctx as any).plugin({ name: saved.name, apply: saved.callback, Config: saved.Config }, {})
+        this.disabledPlugins.delete(id)
+        this.debug('plugin_enable', id)
+        return true
+      }
+      // 未经过 disable 的（registry 里仍存在）
+      this.collectPlugins()
+      const entry = this.pluginRegistry.get(id)
+      if (!entry || id === 'dsh-island' || id === 'IslandService') return false
+      const { name, callback, Config } = entry.runtime
+      ;(this.ctx as any).plugin({ name, apply: callback, Config }, {})
+      this.debug('plugin_enable', id)
+      return true
+    } catch { return false }
   }
 
   private ctlSocketPath(): string {

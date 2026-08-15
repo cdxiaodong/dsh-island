@@ -31,6 +31,8 @@ final class StatusBarController: NSObject {
     private var clickMonitor: Any?
     /// 其他插件注册的菜单项（DSH 侧通过 socket 推送）
     private var pluginItems: [PluginMenuItem] = []
+    /// DSH 运行时插件列表（动态监测）
+    private var pluginList: [IslandPlugin] = []
 
     private let panelSize = NSSize(width: 400, height: 360)
 
@@ -94,19 +96,33 @@ final class StatusBarController: NSObject {
         statusItem?.button?.menu = buildMenu()
     }
 
-    @objc private func pluginMenuItemClicked(_ sender: NSMenuItem) {
-        guard let id = sender.representedObject as? String else { return }
-        sendMenuClick(id)
+    /// 更新插件列表（由 SocketServer 收到 plugin_list 时调用）
+    func updatePluginList(_ plugins: [IslandPlugin]) {
+        pluginList = plugins
+        statusItem?.button?.menu = buildMenu()
+        fputs("[dsh-island-panel] plugins: \(plugins.map(\.title).joined(separator: ", "))\n", stderr)
     }
 
-    /// 点击插件菜单项 → 连接 DSH 插件的控制 socket，发 menu_click
-    private func sendMenuClick(_ id: String) {
+    @objc private func pluginMenuItemClicked(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String else { return }
+        sendCtlCommand("menu_click", id)
+    }
+
+    /// 点击插件管理项 → 启用/关闭插件
+    @objc private func pluginToggleClicked(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String,
+              let plugin = pluginList.first(where: { $0.id == id }) else { return }
+        sendCtlCommand(plugin.running ? "plugin_disable" : "plugin_enable", id)
+    }
+
+    /// 发命令到 DSH 插件的控制 socket
+    private func sendCtlCommand(_ type: String, _ id: String) {
         let path = SocketServer.ctlSocketPath
         let params = NWParameters()
         params.defaultProtocolStack.transportProtocol = NWProtocolTCP.Options()
         let conn = NWConnection(to: .unix(path: path), using: params)
         conn.start(queue: .main)
-        guard let body = try? JSONSerialization.data(withJSONObject: ["type": "menu_click", "id": id]) else { return }
+        guard let body = try? JSONSerialization.data(withJSONObject: ["type": type, "id": id]) else { return }
         conn.send(content: body, completion: .contentProcessed { _ in
             Task { @MainActor in conn.cancel() }
         })
@@ -155,6 +171,21 @@ final class StatusBarController: NSObject {
                 mi.representedObject = item.id
                 menu.addItem(mi)
             }
+        }
+        // 插件管理（动态监测 DSH 插件 + 启用/关闭）
+        if !pluginList.isEmpty {
+            let submenu = NSMenu()
+            for p in pluginList {
+                let mark = p.running ? "●" : "○"
+                let mi = NSMenuItem(title: "\(mark) \(p.title)", action: #selector(pluginToggleClicked(_:)), keyEquivalent: "")
+                mi.target = self
+                mi.representedObject = p.id
+                mi.state = p.running ? .on : .off
+                submenu.addItem(mi)
+            }
+            let pluginMenu = NSMenuItem(title: "插件管理", action: nil, keyEquivalent: "")
+            pluginMenu.submenu = submenu
+            menu.addItem(pluginMenu)
         }
         menu.addItem(.separator())
         let quitItem = NSMenuItem(title: "退出 dsh-island", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")

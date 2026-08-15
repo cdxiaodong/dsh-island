@@ -62,6 +62,10 @@ export declare class IslandService extends Service {
     /** 其他插件注册的菜单项 */
     private menuItems;
     private ctlServer?;
+    /** 插件管理：name → { callback, runtime }（registry 快照） */
+    private pluginRegistry;
+    /** 被禁用的插件缓存（enable 时恢复） */
+    private disabledPlugins;
     constructor(ctx: Context, config?: Config);
     private onPreToolUse;
     private onPostToolUse;
@@ -73,8 +77,16 @@ export declare class IslandService extends Service {
     registerMenuItem(item: IslandMenuItem): () => void;
     /** 把菜单项同步给面板（menu_set） */
     private pushMenu;
-    /** 监听面板发来的菜单点击（控制 socket /tmp/dsh-island-ctl-<uid>.sock） */
+    /** 监听面板发来的命令（控制 socket /tmp/dsh-island-ctl-<uid>.sock） */
     private startCtlServer;
+    /** 收集 registry 里已加载的插件快照 */
+    private collectPlugins;
+    /** 把插件列表发给面板（plugin_list → 右键菜单「插件管理」） */
+    private sendPluginList;
+    /** 关闭插件（registry.delete + 缓存以便恢复） */
+    disablePlugin(id: string): boolean;
+    /** 启用插件（从禁用缓存恢复，或 registry 快照重建） */
+    enablePlugin(id: string): boolean;
     private ctlSocketPath;
     private emit;
     /** 安全地委托给 waterfall 链的下一个监听器（默认放行/透传）。 */

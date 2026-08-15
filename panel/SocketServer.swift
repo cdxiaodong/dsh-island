@@ -11,12 +11,19 @@ struct PluginMenuItem {
     let icon: String?
 }
 
+/// DSH 运行时插件（动态监测 / 启停管理）
+struct IslandPlugin {
+    let id: String
+    let title: String
+    let running: Bool
+}
+
 @MainActor
 final class SocketServer {
     /// 收到插件菜单设置时的回调（由 StatusBarController 更新右键菜单）
     var onMenuUpdate: (([PluginMenuItem]) -> Void)?
-    /// 菜单点击回调（面板点击插件菜单项 → 由控制器转发给 DSH）
-    var onMenuClick: ((String) -> Void)?
+    /// 收到插件列表时的回调（右键菜单「插件管理」）
+    var onPluginList: (([IslandPlugin]) -> Void)?
 
     nonisolated static var socketPath: String {
         if let env = ProcessInfo.processInfo.environment["DSH_ISLAND_SOCKET_PATH"], !env.isEmpty {
@@ -99,16 +106,35 @@ final class SocketServer {
             return
         }
         // 插件菜单设置（type=menu_set）—— 非事件，更新右键菜单
-        if let type = json["type"] as? String, type == "menu_set" {
-            var items: [PluginMenuItem] = []
-            if let rawItems = json["items"] as? [[String: Any]] {
-                for raw in rawItems {
-                    if let id = raw["id"] as? String, let title = raw["title"] as? String {
-                        items.append(PluginMenuItem(id: id, title: title, icon: raw["icon"] as? String))
+        if let type = json["type"] as? String {
+            switch type {
+            case "menu_set":
+                var items: [PluginMenuItem] = []
+                if let rawItems = json["items"] as? [[String: Any]] {
+                    for raw in rawItems {
+                        if let id = raw["id"] as? String, let title = raw["title"] as? String {
+                            items.append(PluginMenuItem(id: id, title: title, icon: raw["icon"] as? String))
+                        }
                     }
                 }
+                onMenuUpdate?(items)
+            case "plugin_list":
+                var plugins: [IslandPlugin] = []
+                if let rawPlugins = json["plugins"] as? [[String: Any]] {
+                    for raw in rawPlugins {
+                        if let id = raw["id"] as? String {
+                            plugins.append(IslandPlugin(
+                                id: id,
+                                title: raw["title"] as? String ?? id,
+                                running: raw["running"] as? Bool ?? true
+                            ))
+                        }
+                    }
+                }
+                onPluginList?(plugins)
+            default:
+                break
             }
-            onMenuUpdate?(items)
             send(conn, "{}")
             conn.cancel()
             return
