@@ -1,0 +1,77 @@
+{
+  "idle": {
+    "frames": 3,
+    "fps": 2,
+    "playback": "blink"
+  },
+  "working": {
+    "frames": 3,
+    "fps": 3,
+    "playback": "loop"
+  },
+  "celebrate": {
+    "frames": 3,
+    "fps": 4,
+    "playback": "loop"
+  },
+  "error": {
+    "frames": 2,
+    "fps": 8,
+    "playback": "once"
+  },
+  "disappointed": {
+    "frames": 2,
+    "fps": 2,
+    "playback": "loop"
+  },
+  "joy": {
+    "frames": 2,
+    "fps": 5,
+    "playback": "loop"
+  },
+  "eat": {
+    "frames": 3,
+    "fps": 8,
+    "playback": "loop"
+  },
+  "play": {
+    "frames": 3,
+    "fps": 4,
+    "playback": "loop"
+  },
+  "drag": {
+    "frames": 1,
+    "fps": 5,
+    "playback": "loop"
+  },
+  "walk": {
+    "frames": 3,
+    "fps": 6,
+    "playback": "pingpong"
+  },
+  "sleep": {
+    "frames": 2,
+    "fps": 1,
+    "playback": "loop"
+  },
+  "wake": {
+    "frames": 2,
+    "fps": 3,
+    "playback": "once"
+  },
+  "welcome": {
+    "frames": 2,
+    "fps": 3,
+    "playback": "loop"
+  },
+  "think": {
+    "frames": 1,
+    "fps": 2,
+    "playback": "loop"
+  },
+  "wait": {
+    "frames": 1,
+    "fps": 2,
+    "playback": "loop"
+  }
+}

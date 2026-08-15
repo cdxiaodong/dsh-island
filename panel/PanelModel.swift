@@ -33,6 +33,39 @@ final class PanelModel: ObservableObject {
     /// 瞬时情绪：celebrate（成功）/ error（失败），2s 后自动清空
     @Published var mood: String?
 
+    // —— 动态统计（托盘可显示）——
+    @Published var toolCount: Int = 0          // 本次会话工具调用数
+    @Published var subagentCount: Int = 0     // 活跃子代理数
+    @Published var sessionStart: Date?        // 会话开始时间（会话时长用）
+
+    /// 托盘显示文本：状态 + 动态后缀
+    var trayText: String {
+        switch status {
+        case "waitingApproval":
+            return "等待授权"
+        case "running", "processing":
+            if let t = currentTool {
+                return toolCount > 0 ? "\(t) ·\(toolCount)" : t
+            }
+            return "运行中"
+        case "idle":
+            if let start = sessionStart {
+                return "空闲 \(Self.formatElapsed(since: start))"
+            }
+            return "空闲"
+        default:
+            return "DSH"
+        }
+    }
+
+    /// 会话时长格式化：<1m → "Xs"，否则 "Xm"，>1h → "XhYm"
+    static func formatElapsed(since start: Date) -> String {
+        let s = max(0, Int(Date().timeIntervalSince(start)))
+        if s < 60 { return "\(s)s" }
+        if s < 3600 { return "\(s / 60)m" }
+        return "\(s / 3600)h\((s % 3600) / 60)m"
+    }
+
     /// PermissionRequest 保持的连接，审批后由 SocketServer 回写决策
     var pendingConnection: NWConnection?
 
@@ -56,14 +89,23 @@ final class PanelModel: ObservableObject {
         case "SessionStart":
             status = "running"
             events.removeAll()
+            sessionStart = Date()
+            toolCount = 0
+            subagentCount = 0
         case "SessionEnd":
             status = "idle"
             currentTool = nil
+            sessionStart = nil
         case "PreToolUse":
             status = "running"
             currentTool = tool ?? "tool"
         case "PostToolUse", "PostToolUseFailure":
             currentTool = nil
+            toolCount += 1
+        case "SubagentStart":
+            subagentCount += 1
+        case "SubagentStop":
+            subagentCount = max(0, subagentCount - 1)
         case "PermissionRequest":
             status = "waitingApproval"
             currentTool = tool ?? "tool"

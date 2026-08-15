@@ -1,5 +1,13 @@
 import { Context, Service } from 'cordis';
 export declare const name = "dsh-island";
+/** 其他插件通过 ctx.island.registerMenuItem 注册的托盘右键菜单项 */
+export interface IslandMenuItem {
+    id: string;
+    title: string;
+    icon?: string;
+    /** 点击菜单项时执行 */
+    action?: () => void | Promise<void>;
+}
 export interface Config {
     /** 覆盖面板 socket 路径（默认 /tmp/dsh-island-<uid>.sock） */
     socketPath?: string;
@@ -51,10 +59,23 @@ export declare class IslandService extends Service {
     private readonly source;
     private readonly approvalTimeoutMs;
     private readonly config;
+    /** 其他插件注册的菜单项 */
+    private menuItems;
+    private ctlServer?;
     constructor(ctx: Context, config?: Config);
     private onPreToolUse;
     private onPostToolUse;
     private onApprovalRequest;
+    /**
+     * 注册一个托盘右键菜单项。返回注销函数。
+     * 其他 DSH 插件：inject: ['island']，然后 ctx.island.registerMenuItem(...)
+     */
+    registerMenuItem(item: IslandMenuItem): () => void;
+    /** 把菜单项同步给面板（menu_set） */
+    private pushMenu;
+    /** 监听面板发来的菜单点击（控制 socket /tmp/dsh-island-ctl-<uid>.sock） */
+    private startCtlServer;
+    private ctlSocketPath;
     private emit;
     /** 安全地委托给 waterfall 链的下一个监听器（默认放行/透传）。 */
     private delegate;

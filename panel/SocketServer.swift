@@ -4,13 +4,33 @@
 import Foundation
 import Network
 
+/// 插件注册的菜单项
+struct PluginMenuItem {
+    let id: String
+    let title: String
+    let icon: String?
+}
+
 @MainActor
 final class SocketServer {
+    /// 收到插件菜单设置时的回调（由 StatusBarController 更新右键菜单）
+    var onMenuUpdate: (([PluginMenuItem]) -> Void)?
+    /// 菜单点击回调（面板点击插件菜单项 → 由控制器转发给 DSH）
+    var onMenuClick: ((String) -> Void)?
+
     nonisolated static var socketPath: String {
         if let env = ProcessInfo.processInfo.environment["DSH_ISLAND_SOCKET_PATH"], !env.isEmpty {
             return env
         }
         return "/tmp/dsh-island-\(getuid()).sock"
+    }
+
+    /// DSH 插件监听的控制 socket（面板发菜单点击过去）
+    nonisolated static var ctlSocketPath: String {
+        if let env = ProcessInfo.processInfo.environment["DSH_ISLAND_CTL_SOCKET_PATH"], !env.isEmpty {
+            return env
+        }
+        return "/tmp/dsh-island-ctl-\(getuid()).sock"
     }
 
     private let model: PanelModel
@@ -78,6 +98,22 @@ final class SocketServer {
             conn.cancel()
             return
         }
+        // 插件菜单设置（type=menu_set）—— 非事件，更新右键菜单
+        if let type = json["type"] as? String, type == "menu_set" {
+            var items: [PluginMenuItem] = []
+            if let rawItems = json["items"] as? [[String: Any]] {
+                for raw in rawItems {
+                    if let id = raw["id"] as? String, let title = raw["title"] as? String {
+                        items.append(PluginMenuItem(id: id, title: title, icon: raw["icon"] as? String))
+                    }
+                }
+            }
+            onMenuUpdate?(items)
+            send(conn, "{}")
+            conn.cancel()
+            return
+        }
+
         let name = json["hook_event_name"] as? String ?? ""
 
         if name == "PermissionRequest" {

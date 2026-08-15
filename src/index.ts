@@ -1,11 +1,21 @@
 import { Context, Service } from 'cordis'
-import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { spawn, execFile } from 'node:child_process'
+import { existsSync, unlinkSync } from 'node:fs'
+import { createServer } from 'node:net'
 import { fileURLToPath } from 'node:url'
 import * as path from 'node:path'
 import { CodeIslandSocket, defaultSocketPath, parseDecision, type SendResult } from './socket.js'
 
 export const name = 'dsh-island'
+
+/** 其他插件通过 ctx.island.registerMenuItem 注册的托盘右键菜单项 */
+export interface IslandMenuItem {
+  id: string
+  title: string
+  icon?: string
+  /** 点击菜单项时执行 */
+  action?: () => void | Promise<void>
+}
 
 export interface Config {
   /** 覆盖面板 socket 路径（默认 /tmp/dsh-island-<uid>.sock） */
@@ -61,6 +71,9 @@ export class IslandService extends Service {
   private readonly source: string
   private readonly approvalTimeoutMs: number
   private readonly config: Config
+  /** 其他插件注册的菜单项 */
+  private menuItems: IslandMenuItem[] = []
+  private ctlServer?: ReturnType<typeof createServer>
 
   constructor(ctx: Context, config: Config = {}) {
     super(ctx, 'island')
@@ -68,6 +81,14 @@ export class IslandService extends Service {
     this.source = config.source ?? 'dsh'
     this.approvalTimeoutMs = config.approvalTimeoutMs ?? 300_000
     this.client = new CodeIslandSocket(config.socketPath)
+
+    // 监听面板发来的菜单点击（控制 socket）
+    this.startCtlServer()
+    // 插件卸载时清理 ctl server
+    ctx.effect(() => () => {
+      this.ctlServer?.close()
+      this.ctlServer = undefined
+    })
 
     // 会话生命周期
     ctx.on('session/created' as any, (session: any) => {
@@ -190,6 +211,58 @@ export class IslandService extends Service {
     return delegated ?? { outcome: 'rejected' }
   }
 
+  // ---- 插件注册接口（托盘右键菜单）----
+
+  /**
+   * 注册一个托盘右键菜单项。返回注销函数。
+   * 其他 DSH 插件：inject: ['island']，然后 ctx.island.registerMenuItem(...)
+   */
+  registerMenuItem(item: IslandMenuItem): () => void {
+    this.menuItems.push(item)
+    this.pushMenu()
+    return () => {
+      this.menuItems = this.menuItems.filter((i) => i.id !== item.id)
+      this.pushMenu()
+    }
+  }
+
+  /** 把菜单项同步给面板（menu_set） */
+  private pushMenu() {
+    if (!this.client.available()) return
+    void this.client.send({
+      type: 'menu_set',
+      items: this.menuItems.map(({ id, title, icon }) => ({ id, title, icon })),
+    }, { wait: false }).catch(() => {})
+  }
+
+  /** 监听面板发来的菜单点击（控制 socket /tmp/dsh-island-ctl-<uid>.sock） */
+  private startCtlServer() {
+    const ctlPath = this.ctlSocketPath()
+    try { unlinkSync(ctlPath) } catch { /* ignore */ }
+    this.ctlServer = createServer((conn) => {
+      const chunks: Buffer[] = []
+      conn.on('data', (d) => chunks.push(Buffer.isBuffer(d) ? d : Buffer.from(d)))
+      conn.on('end', () => {
+        try {
+          const msg = JSON.parse(Buffer.concat(chunks).toString('utf8')) as { type?: string; id?: string }
+          if (msg.type === 'menu_click' && msg.id) {
+            const item = this.menuItems.find((i) => i.id === msg.id)
+            void item?.action?.()
+            this.debug('menu_click', msg.id)
+          }
+        } catch { /* ignore */ }
+      })
+      conn.on('error', () => {})
+    })
+    this.ctlServer.on('error', () => {})
+    this.ctlServer.listen(ctlPath)
+  }
+
+  private ctlSocketPath(): string {
+    return process.env.DSH_ISLAND_CTL_SOCKET_PATH
+      ?? `/tmp/dsh-island-ctl-${process.getuid?.() ?? 0}.sock`
+  }
+
   // ---- 内部工具 -------------------------------------------------------
 
   private async emit(payload: Record<string, unknown>) {
@@ -251,15 +324,24 @@ export function apply(ctx: Context, config?: Config) {
   ctx.plugin(IslandService, config)
 }
 
-/** 自动拉起 macOS 灵动岛面板二进制（若未在运行）。 */
+/** 自动拉起 macOS 灵动岛面板 app（若未在运行）。 */
 function launchPanel(config: Config = {}) {
   if (config.autoLaunchPanel === false) return
-  // lib/ 的上一级是插件根目录，面板二进制在 bin/dsh-island-panel
+  // lib/ 的上一级是插件根目录，面板 app 在 bin/dsh-island-panel.app
   const here = path.dirname(fileURLToPath(import.meta.url))
-  const bin = config.panelBin ?? path.resolve(here, '..', 'bin', 'dsh-island-panel')
-  if (!existsSync(bin)) return
+  const root = path.resolve(here, '..')
+  const appPath = config.panelBin ?? path.join(root, 'bin', 'dsh-island-panel.app')
   const sock = config.socketPath ?? defaultSocketPath()
   if (existsSync(sock)) return // 面板已在运行，跳过
+
+  // 优先用 `open` 启动 .app —— 由 LaunchServices 注册，status item 才能显示在菜单栏
+  if (existsSync(appPath)) {
+    execFile('open', [appPath], { env: { ...process.env, DSH_ISLAND_SOCKET_PATH: sock } }, () => {})
+    return
+  }
+  // 兜底：裸二进制（非 GUI 会话时可能不显示 status item）
+  const bin = path.join(root, 'bin', 'dsh-island-panel')
+  if (!existsSync(bin)) return
   const child = spawn(bin, [], {
     detached: true,
     stdio: 'ignore',

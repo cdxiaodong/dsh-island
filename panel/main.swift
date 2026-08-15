@@ -14,6 +14,10 @@ MainActor.assumeIsolated {
     server.start()
 
     let controller = StatusBarController(model: model)
+    // 插件菜单设置 → 更新托盘右键菜单
+    server.onMenuUpdate = { [weak controller] items in
+        controller?.updatePluginMenu(items)
+    }
     controller.show()
 
     app.run()
