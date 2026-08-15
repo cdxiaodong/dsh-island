@@ -108,35 +108,45 @@ struct PanelView: View {
     private var header: some View {
         HStack(spacing: 11) {
             // 鲸鱼娘桌宠动画（15 动作 + 日常随机 + 状态联动）
-            WhaleSpriteView(status: model.status, mood: model.mood, width: 40, height: 46)
-                .frame(width: 40, height: 46)
+            WhaleSpriteView(status: model.status, mood: model.mood, width: 46, height: 52)
+                .frame(width: 46, height: 52)
                 .padding(.trailing, 4)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("DeepSeek Harness")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(textPrimary)
                 Text(model.cwd)
                     .font(.system(size: 9.5, design: .monospaced))
                     .foregroundStyle(textMuted)
                     .lineLimit(1)
                     .truncationMode(.middle)
+                // 当前工具（运行中显示）
+                if let tool = model.currentTool, statusColor == cWorking {
+                    HStack(spacing: 4) {
+                        Image(systemName: "hammer.fill").font(.system(size: 8.5))
+                        Text(tool).font(.system(size: 10, design: .monospaced))
+                    }
+                    .foregroundStyle(cWorking)
+                    .padding(.horizontal, 7).padding(.vertical, 2)
+                    .background(Capsule().fill(cWorking.opacity(0.12)))
+                }
             }
 
             Spacer()
 
-            // 状态胶囊
+            // 状态胶囊（浅蓝，呼应托盘）
             HStack(spacing: 5) {
                 Circle().fill(statusColor).frame(width: 7, height: 7)
                     .shadow(color: statusColor.opacity(0.8), radius: 3)
                 Text(statusLabel)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(statusColor)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Color(hex: "0E1835"))
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(Capsule().fill(chromeOverlay))
-            .overlay(Capsule().stroke(chromeBorder, lineWidth: 1))
+            .padding(.vertical, 4)
+            .background(Capsule().fill(Color(hex: "B8C6EC")))
+            .overlay(Capsule().stroke(Color(hex: "8EA2D8"), lineWidth: 1))
         }
     }
 
