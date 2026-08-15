@@ -18,22 +18,13 @@ final class StatusBarController: NSObject {
     }
 
     func show() {
-        // 胶囊托盘：variableLength 由内容撑起（鲸鱼娘 + 宽状态文字）
+        // DSH 浅蓝胶囊托盘：合成胶囊图（button.image），完全可控
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
             button.target = self
             button.action = #selector(togglePopover(_:))
             button.toolTip = "dsh-island — DeepSeek Harness 灵动岛"
-            button.image = Self.loadMenuIcon()
-            button.imagePosition = .imageLeading
-            button.imageScaling = .scaleProportionallyDown
-            // DSH 蓝灰胶囊背景（深色圆角 + 细边框）
-            button.wantsLayer = true
-            button.layer?.backgroundColor = NSColor(calibratedRed: 0.075, green: 0.086, blue: 0.11, alpha: 1).cgColor
-            button.layer?.cornerRadius = 11
-            button.layer?.cornerCurve = .continuous
-            button.layer?.borderWidth = 1
-            button.layer?.borderColor = NSColor(calibratedRed: 0.14, green: 0.15, blue: 0.20, alpha: 1).cgColor
+            button.imagePosition = .imageOnly
             refreshButton()
         }
         statusItem = item
@@ -44,7 +35,7 @@ final class StatusBarController: NSObject {
         popover.contentSize = NSSize(width: 400, height: 340)
         self.popover = popover
 
-        // 模型变化 → 刷新菜单栏按钮文案
+        // 模型变化 → 刷新菜单栏按钮（重绘胶囊图）
         cancellable = model.objectWillChange.sink { [weak self] _ in
             MainActor.assumeIsolated { self?.refreshButton() }
         }
@@ -74,29 +65,49 @@ final class StatusBarController: NSObject {
     private func refreshButton() {
         guard let button = statusItem?.button else { return }
         let text: String
-        let color: NSColor
         switch model.status {
-        case "waitingApproval":
-            text = "等待授权"
-            color = NSColor(calibratedRed: 0.98, green: 0.75, blue: 0.14, alpha: 1)   // 琥珀
-        case "running", "processing":
-            text = model.currentTool.map { "\($0)" } ?? "运行中"
-            color = NSColor(calibratedRed: 0.09, green: 0.91, blue: 0.98, alpha: 1)   // DSH 青
-        case "idle":
-            text = "空闲"
-            color = NSColor(calibratedRed: 0.55, green: 0.60, blue: 0.72, alpha: 1)   // DSH 蓝灰
-        default:
-            text = "DSH"
-            color = NSColor(calibratedRed: 0.55, green: 0.60, blue: 0.72, alpha: 1)
+        case "waitingApproval": text = "等待授权"
+        case "running", "processing": text = model.currentTool.map { "\($0)" } ?? "运行中"
+        case "idle": text = "空闲"
+        default: text = "DSH"
         }
-        // 前后留白，撑出更宽的胶囊托盘
-        button.attributedTitle = NSAttributedString(
-            string: "  \(text)  ",
-            attributes: [
-                .font: NSFont.systemFont(ofSize: 11.5, weight: .medium),
-                .foregroundColor: color,
-            ]
-        )
+        button.image = Self.renderCapsule(text: text)
+        button.imageScaling = .scaleNone
+    }
+
+    /// 绘制 DSH 浅蓝胶囊图：浅蓝圆角底 + 鲸鱼娘半身 + 白色状态文字
+    static func renderCapsule(text: String) -> NSImage {
+        let font = NSFont.systemFont(ofSize: 12, weight: .semibold)
+        let textSize = (text as NSString).size(withAttributes: [.font: font])
+        let iconW: CGFloat = 20
+        let padding: CGFloat = 14
+        let height: CGFloat = 22
+        let width = iconW + textSize.width + padding * 2
+
+        let img = NSImage(size: NSSize(width: width, height: height))
+        img.lockFocus()
+        defer { img.unlockFocus() }
+
+        // DSH 官方浅蓝 #165dff 胶囊
+        let capsule = NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: width, height: height),
+                                   xRadius: height / 2, yRadius: height / 2)
+        NSColor(calibratedRed: 0.086, green: 0.365, blue: 1.0, alpha: 1).setFill()
+        capsule.fill()
+        // 顶部细高光
+        NSColor(calibratedWhite: 1, alpha: 0.22).setFill()
+        NSBezierPath(roundedRect: NSRect(x: 1, y: height - 9, width: width - 2, height: 7),
+                     xRadius: 3, yRadius: 3).fill()
+
+        // 鲸鱼娘半身（左上）
+        if let icon = Self.loadMenuIcon() {
+            icon.draw(in: NSRect(x: padding, y: 2, width: 18, height: 18))
+        }
+        // 白色状态文字
+        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.white]
+        let textX = padding + iconW + 4
+        (text as NSString).draw(at: NSPoint(x: textX, y: 3.5), withAttributes: attrs)
+
+        return img
     }
 
     // MARK: Popover
