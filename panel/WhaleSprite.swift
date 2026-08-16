@@ -46,22 +46,36 @@ enum Whale2Assets {
     /// 当前皮肤（default / pink / ocean / gold / violet）
     static var currentSkin = "default"
     static let skinNames = ["default", "pink", "ocean", "gold", "violet"]
-    private static var resourceDir: URL? = {
+    /// 当前角色（whale 像素鲸鱼娘 / chibi 二次元）
+    static var currentCharacter = "whale"
+    static let characterNames = ["whale", "chibi"]
+    static let characterDisplayNames = ["🐋 像素鲸鱼娘", "✨ 二次元 Chibi"]
+
+    /// 资源根目录：bin/ 含 whale2/whale2b/chibi/chibi2b
+    private static var baseDir: URL? = {
         let execDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
-        let bundled = execDir.appendingPathComponent("whale2")
-        if FileManager.default.fileExists(atPath: bundled.path) { return bundled }
-        return execDir.deletingLastPathComponent().appendingPathComponent("panel/resources/whale2")
-    }()
-    private static var halfResourceDir: URL? = {
-        let execDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
-        let bundled = execDir.appendingPathComponent("whale2b")
-        if FileManager.default.fileExists(atPath: bundled.path) { return bundled }
-        return execDir.deletingLastPathComponent().appendingPathComponent("panel/resources/whale2b")
+        if FileManager.default.fileExists(atPath: execDir.appendingPathComponent("whale2").path) { return execDir }
+        return execDir.deletingLastPathComponent().appendingPathComponent("panel/resources")
     }()
 
-    /// 皮肤子路径：default 用 frames/，其他用 skins/<skin>/frames/
+    /// chibi 动作映射：只有 idle/struggle，error→struggle，其余→idle（浮动）
+    private static func resolvedState(_ state: String) -> String {
+        if currentCharacter == "chibi" {
+            return state == "error" ? "struggle" : "idle"
+        }
+        return state
+    }
+
+    /// 角色资源目录名（half=true 半身）
+    private static func characterRoot(_ half: Bool) -> String {
+        if currentCharacter == "chibi" { return half ? "chibi2b" : "chibi" }
+        return half ? "whale2b" : "whale2"
+    }
+
+    /// 皮肤子路径：chibi 无皮肤；whale 的 default 用 frames/，其他用 skins/<skin>/frames/
     private static func skinSubpath() -> String {
-        currentSkin == "default" ? "frames" : "skins/\(currentSkin)/frames"
+        if currentCharacter == "chibi" { return "frames" }
+        return currentSkin == "default" ? "frames" : "skins/\(currentSkin)/frames"
     }
 
     /// 切换皮肤（清缓存，重新加载）
@@ -72,11 +86,20 @@ enum Whale2Assets {
         halfFrameCache.removeAll()
     }
 
-    static func frames(for state: String) -> [NSImage] {
-        let key = "\(currentSkin)/\(state)"
+    /// 切换角色（鲸鱼娘造型，清缓存）
+    static func setCharacter(_ character: String) {
+        guard characterNames.contains(character) else { return }
+        currentCharacter = character
+        frameCache.removeAll()
+        halfFrameCache.removeAll()
+    }
+
+    static func frames(for rawState: String) -> [NSImage] {
+        let state = resolvedState(rawState)
+        let key = "\(currentCharacter)/\(currentSkin)/\(state)"
         if let hit = frameCache[key] { return hit }
-        guard let dir = resourceDir else { return [] }
-        let frameDir = dir.appendingPathComponent("\(skinSubpath())/\(state)")
+        guard let dir = baseDir else { return [] }
+        let frameDir = dir.appendingPathComponent("\(characterRoot(false))/\(skinSubpath())/\(state)")
         let urls = (try? FileManager.default.contentsOfDirectory(at: frameDir, includingPropertiesForKeys: nil)) ?? []
         let images = urls.sorted { $0.lastPathComponent < $1.lastPathComponent }.compactMap { NSImage(contentsOf: $0) }
         frameCache[key] = images
@@ -84,11 +107,12 @@ enum Whale2Assets {
     }
 
     /// 半身帧（托盘专用，头+上半身，完整 PNG 不裁剪）
-    static func halfFrames(for state: String) -> [NSImage] {
-        let key = "\(currentSkin)/\(state)"
+    static func halfFrames(for rawState: String) -> [NSImage] {
+        let state = resolvedState(rawState)
+        let key = "\(currentCharacter)/\(currentSkin)/\(state)"
         if let hit = halfFrameCache[key] { return hit }
-        guard let dir = halfResourceDir else { return [] }
-        let frameDir = dir.appendingPathComponent("\(skinSubpath())/\(state)")
+        guard let dir = baseDir else { return [] }
+        let frameDir = dir.appendingPathComponent("\(characterRoot(true))/\(skinSubpath())/\(state)")
         let urls = (try? FileManager.default.contentsOfDirectory(at: frameDir, includingPropertiesForKeys: nil)) ?? []
         let images = urls.sorted { $0.lastPathComponent < $1.lastPathComponent }.compactMap { NSImage(contentsOf: $0) }
         halfFrameCache[key] = images
@@ -104,8 +128,8 @@ enum Whale2Assets {
 
     /// 半身鲸鱼娘图标（菜单栏胶囊用）
     static var menuIcon: NSImage? {
-        guard let dir = resourceDir else { return nil }
-        let url = dir.appendingPathComponent("menu-icon.png")
+        guard let dir = baseDir else { return nil }
+        let url = dir.appendingPathComponent("whale2/menu-icon.png")
         guard let img = NSImage(contentsOf: url) else { return nil }
         img.size = NSSize(width: 18, height: 20)
         return img
