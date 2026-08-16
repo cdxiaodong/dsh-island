@@ -1,5 +1,4 @@
 <p align="center">
-  <img src="docs/screenshots/demo-cross-sync.gif" width="760" alt="dsh-island 跨端互通演示">
 </p>
 
 <h1 align="center">dsh-island · 鲸鱼娘灵动岛</h1>
