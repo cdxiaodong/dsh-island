@@ -48,12 +48,9 @@ final class StatusBarController: NSObject {
     }
 
     func show() {
-        // 恢复上次选择的鲸鱼娘皮肤 + 角色
+        // 恢复上次选择的鲸鱼娘皮肤
         if let skin = UserDefaults.standard.string(forKey: "dsh_island_skin") {
             Whale2Assets.setSkin(skin)
-        }
-        if let char = UserDefaults.standard.string(forKey: "dsh_island_character") {
-            Whale2Assets.setCharacter(char)
         }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
@@ -176,15 +173,6 @@ final class StatusBarController: NSObject {
         sendCtlCommand("menu_click", id)
     }
 
-    /// 切换鲸鱼娘角色（像素鲸鱼娘 / 二次元 Chibi）
-    @objc private func characterClicked(_ sender: NSMenuItem) {
-        guard let char = sender.representedObject as? String else { return }
-        Whale2Assets.setCharacter(char)
-        UserDefaults.standard.set(char, forKey: "dsh_island_character")
-        refreshButton()
-        statusItem?.button?.menu = buildMenu()   // 更新勾选
-    }
-
     /// 切换鲸鱼娘皮肤（换装）
     @objc private func skinClicked(_ sender: NSMenuItem) {
         guard let skin = sender.representedObject as? String else { return }
@@ -268,19 +256,6 @@ final class StatusBarController: NSObject {
                 menu.addItem(mi)
             }
         }
-        // 角色（鲸鱼娘造型：像素 / 二次元 Chibi）
-        let charSubmenu = NSMenu()
-        for (i, name) in Whale2Assets.characterNames.enumerated() {
-            let mi = NSMenuItem(title: Whale2Assets.characterDisplayNames[i], action: #selector(characterClicked(_:)), keyEquivalent: "")
-            mi.target = self
-            mi.representedObject = name
-            mi.state = (name == Whale2Assets.currentCharacter) ? .on : .off
-            charSubmenu.addItem(mi)
-        }
-        let charMenu = NSMenuItem(title: "鲸鱼娘角色", action: nil, keyEquivalent: "")
-        charMenu.submenu = charSubmenu
-        menu.addItem(charMenu)
-
         // 皮肤（鲸鱼娘换装）
         let skinSubmenu = NSMenu()
         for skin in Whale2Assets.skinNames {

@@ -13,11 +13,7 @@ cp -R panel/resources/whale2 bin/whale2
 # 半身套件（托盘专用，头+上半身）
 rm -rf bin/whale2b
 cp -R panel/resources/whale2b bin/whale2b
-# 二次元 Chibi 造型（抹鲸，MIT）
-rm -rf bin/chibi bin/chibi2b
-cp -R panel/resources/chibi bin/chibi
-cp -R panel/resources/chibi2b bin/chibi2b
-echo "whale2: $(ls bin/whale2/frames | wc -l | tr -d ' ') 动作, whale2b(半身): $(ls bin/whale2b/frames | wc -l | tr -d ' ') 动作, chibi: 2 动作"
+echo "whale2: $(ls bin/whale2/frames | wc -l | tr -d ' ') 动作, whale2b(半身): $(ls bin/whale2b/frames | wc -l | tr -d ' ') 动作"
 
 # -swift-version 5 关闭 Swift 6 严格并发检查（兼容性优先）
 swiftc -swift-version 5 \
