@@ -336,10 +336,11 @@
     const gif=new GIF({
       workers: (navigator.hardwareConcurrency||4),
       workerScript:'assets/js/gif.worker.js',
-      quality:12,
+      quality:14,
+      globalPalette:true,
       background:'#e8ecf5'
     });
-    const FRAMES=52, STEP=140; // ~7.3s
+    const FRAMES=36, STEP=150; // ~5.4s
     let i=0;
     const tick=()=>{
       if(i>=FRAMES){
@@ -349,7 +350,7 @@
         return;
       }
       i++;
-      html2canvas(document.body,{backgroundColor:'#e8ecf5',scale:1.0,useCORS:true}).then(c=>{
+      html2canvas(document.body,{backgroundColor:'#e8ecf5',scale:0.7,useCORS:true}).then(c=>{
         gif.addFrame(c,{delay:STEP});
       }).catch(()=>{});
     };

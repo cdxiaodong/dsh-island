@@ -46,7 +46,7 @@ cd docs && python3 -m http.server 8080
 
 ### ④ 手机动态管理端 · 接口映射，不写死任何一个功能
 
-<img src="docs/screenshots/demo-manage.png" width="820" alt="手机动态管理端">
+<img src="docs/screenshots/demo-manage.gif" width="820" alt="手机动态管理端">
 
 手机管理端从 DSH 拉取**能力清单**（原生功能 + 全部插件接口），**动态生成管理界面**：装上一个新的第三方插件，手机端自动多一个管理入口，App 永不过时。内置对多个真实高 star 插件（open-design 87.4k★、voyager 19.5k★、dsh-web-ui、modlens、OpenBiliClaw…）的实时监测：状态 / 调用量 / 内存 / 健康度，远程启停、检查更新。
 
