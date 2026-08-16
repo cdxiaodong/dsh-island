@@ -27,17 +27,17 @@ cd docs && python3 -m http.server 8080
 # 打开 http://localhost:8080/index.html
 ```
 
-### ① 跨端互通 · Mac 灵动岛 ↔ 手机灵动岛
+### ① DSH 对话联动 · 会话全览 + Auto 模式
+
+<img src="docs/screenshots/demo-dsh-link.gif" width="820" alt="DSH 对话联动">
+
+所有 DSH 会话一屏总览：活跃会话、工具调用、时长、状态一目了然；点击会话二次展开最近工具 / Token / 运行模式（Auto 全程无需批准），可直接跳转会话或停止。灵动岛胶囊随状态实时切换「空闲 / 运行中 / 等待授权」。
+
+### ② 跨端互通 · Mac 灵动岛 ↔ 手机灵动岛
 
 <img src="docs/screenshots/demo-cross-sync.gif" width="820" alt="跨端互通">
 
 任务在电脑上跑，进度实时同步到手机灵动岛：菜单栏胶囊一瞥即得，关键节点（完成/失败/审批）主动展开提醒，手机上直接跟随确认。异构灵动岛形态（macOS 菜单栏 ↔ iPhone Dynamic Island）同一状态源双向流转。
-
-### ② DSH 对话联动 · 会话全览 + Auto 模式
-
-<img src="docs/screenshots/demo-dsh-link.png" width="820" alt="DSH 对话联动">
-
-所有 DSH 会话一屏总览：活跃会话、工具调用、时长、状态一目了然；点击会话二次展开最近工具 / Token / 运行模式（Auto 全程无需批准），可直接跳转会话或停止。灵动岛胶囊随状态实时切换「空闲 / 运行中 / 等待授权」。
 
 ### ③ 价值对比 · 一天工作流的前后之差
 
