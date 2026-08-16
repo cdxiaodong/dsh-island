@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/screenshots/demo-manage.gif" width="760" alt="dsh-island 手机动态管理端演示">
+  <img src="docs/screenshots/demo-cross-sync.gif" width="760" alt="dsh-island 跨端互通演示">
 </p>
 
 <h1 align="center">dsh-island · 鲸鱼娘灵动岛</h1>
@@ -29,7 +29,7 @@ cd docs && python3 -m http.server 8080
 
 ### ① 跨端互通 · Mac 灵动岛 ↔ 手机灵动岛
 
-<img src="docs/screenshots/demo-cross-sync.png" width="820" alt="跨端互通">
+<img src="docs/screenshots/demo-cross-sync.gif" width="820" alt="跨端互通">
 
 任务在电脑上跑，进度实时同步到手机灵动岛：菜单栏胶囊一瞥即得，关键节点（完成/失败/审批）主动展开提醒，手机上直接跟随确认。异构灵动岛形态（macOS 菜单栏 ↔ iPhone Dynamic Island）同一状态源双向流转。
 
@@ -47,7 +47,7 @@ cd docs && python3 -m http.server 8080
 
 ### ④ 手机动态管理端 · 接口映射，不写死任何一个功能
 
-<img src="docs/screenshots/demo-manage.gif" width="820" alt="手机动态管理端">
+<img src="docs/screenshots/demo-manage.png" width="820" alt="手机动态管理端">
 
 手机管理端从 DSH 拉取**能力清单**（原生功能 + 全部插件接口），**动态生成管理界面**：装上一个新的第三方插件，手机端自动多一个管理入口，App 永不过时。内置对多个真实高 star 插件（open-design 87.4k★、voyager 19.5k★、dsh-web-ui、modlens、OpenBiliClaw…）的实时监测：状态 / 调用量 / 内存 / 健康度，远程启停、检查更新。
 
