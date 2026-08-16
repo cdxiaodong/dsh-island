@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dsh-island · 手机管理端（动态接口映射）</title>
+<style>
+  :root{
+    --bg:#e8ecf5; --bg2:#eef1fb; --bg3:#dce3f7;
+    --brand:#4a5fa8; --brand2:#7f96d2; --brand3:#a5b7e2;
+    --card:#ffffff; --line:#d6dae6; --txt:#1d2539; --dim:#6b738a;
+    --ok:#2e8e52; --warn:#c08a33; --err:#e05c5c; --run:#2b7cd9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,"PingFang SC",sans-serif;}
+  body{background:linear-gradient(180deg,#eef1fb,#e8ecf5); color:var(--txt); min-height:100vh;}
+  .wrap{max-width:1260px; margin:0 auto; padding:40px 30px 90px;}
+
+  .hero{text-align:center; margin-bottom:26px;}
+  .badge{display:inline-block; font-size:11px; letter-spacing:2px; color:var(--brand); border:1px solid var(--brand3); border-radius:999px; padding:5px 16px; background:#fff; margin-bottom:18px; font-weight:600;}
+  .hero h1{font-size:38px; font-weight:800; background:linear-gradient(90deg,#4a5fa8,#7f96d2 45%,#2b7cd9); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .hero p{color:var(--dim); font-size:14px; margin-top:12px;}
+
+  /* ===== 架构流程条 ===== */
+  .arch{display:flex; align-items:center; justify-content:center; gap:0; margin:26px auto 40px; max-width:980px; flex-wrap:wrap;}
+  .arch-node{background:var(--card); border:1px solid var(--brand3); border-radius:16px; padding:14px 20px; text-align:center; box-shadow:0 6px 18px rgba(74,95,168,.12);}
+  .arch-node .an-i{font-size:22px; margin-bottom:6px;}
+  .arch-node .an-t{font-size:12px; font-weight:800; color:var(--txt);}
+  .arch-node .an-s{font-size:9px; color:var(--dim); margin-top:2px;}
+  .arch-arrow{flex:1; min-width:40px; max-width:90px; height:2px; margin:0 6px; background:repeating-linear-gradient(90deg,var(--brand2) 0 7px,transparent 7px 14px); position:relative;}
+  .arch-arrow::after{content:"▶"; position:absolute; right:-4px; top:-8px; color:var(--brand); font-size:12px;}
+  .arch-tag{font-size:9px; color:var(--brand); font-weight:700; text-align:center; margin-top:6px;}
+
+  /* ===== 主舞台 ===== */
+  .stage{display:flex; gap:36px; align-items:flex-start; justify-content:center; flex-wrap:wrap;}
+
+  /* 左：DSH 服务（能力清单源） */
+  .dsh-end{width:430px; flex-shrink:0;}
+  .end-tag{font-size:12px; color:var(--dim); letter-spacing:1px; text-align:center; margin-bottom:12px; font-weight:600;}
+  .dsh-box{background:var(--card); border:1px solid var(--line); border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(74,95,168,.15);}
+  .db-head{background:linear-gradient(#f7f8fb,#eef1fb); border-bottom:1px solid var(--line); padding:12px 18px; display:flex; align-items:center; gap:9px;}
+  .db-head .dot{width:10px;height:10px;border-radius:50%;}
+  .db-head .r{background:#ff5f57;}.db-head .y{background:#febc2e;}.db-head .g{background:#28c840;}
+  .db-head .tt{font-size:12px; font-weight:700; color:var(--brand); margin-left:6px;}
+  .db-head .port{margin-left:auto; font-size:9px; font-family:Menlo,monospace; color:var(--dim); background:#eef1fb; padding:2px 8px; border-radius:6px;}
+  .db-body{padding:16px 18px;}
+  .cap-title{font-size:10px; color:var(--brand); font-weight:700; letter-spacing:1px; margin-bottom:9px; display:flex; align-items:center; gap:6px;}
+  .cap-title .pulse-dot{width:7px; height:7px; border-radius:50%; background:var(--ok); animation:blink 1.4s infinite;}
+  @keyframes blink{50%{opacity:.3;}}
+  /* 能力清单（DSH 暴露的接口列表） */
+  .cap-list{background:#101624; border-radius:13px; padding:13px 15px; font-family:Menlo,monospace; font-size:10px; line-height:2.05; color:#c6d0f5; max-height:340px; overflow:hidden;}
+  .cap-line{animation:logIn .4s; opacity:0; animation-fill-mode:forwards;}
+  @keyframes logIn{from{opacity:0; transform:translateX(-8px);} to{opacity:1; transform:none;}}
+  .cap-line .cm{color:#5b6a99;} .cap-line .route{color:#22d3ee;} .cap-line .plug{color:#a5b7e2;} .cap-line .star{color:#FBBF24;} .cap-line .new{color:#4ADE80;}
+
+  /* 同步光束 */
+  .map-link{display:flex; flex-direction:column; align-items:center; gap:10px; padding-top:170px;}
+  .map-link .lbl{font-size:11px; color:var(--brand); letter-spacing:1px; text-align:center; line-height:1.7; font-weight:700;}
+  .map-link .bm{width:2px; height:170px; background:linear-gradient(var(--brand2),rgba(127,150,210,.05)); position:relative;}
+  .map-link .bm .pp{position:absolute; left:50%; width:8px; height:8px; border-radius:50%; background:var(--brand2); box-shadow:0 0 12px var(--brand2); transform:translateX(-50%); animation:flow 1.4s linear infinite;}
+  .map-link .bm .pp2{animation-delay:.7s;}
+  @keyframes flow{0%{top:-6px;opacity:0;}12%{opacity:1;}88%{opacity:1;}100%{top:170px;opacity:0;}}
+
+  /* 右：手机管理端 */
+  .phone-end{flex-shrink:0;}
+  .mg-phone{width:300px; height:630px; border-radius:46px; background:#04060e; padding:12px; box-shadow:0 30px 70px rgba(74,95,168,.3); border:1px solid #2a3560;}
+  .mg-screen{position:relative; width:100%; height:100%; border-radius:36px; overflow:hidden; background:linear-gradient(#eef1fb,#e3e8f2); display:flex; flex-direction:column;}
+  .mg-island{margin:14px 14px 0; background:#000; border-radius:18px; padding:10px 13px; display:flex; align-items:center; gap:9px; box-shadow:0 8px 22px rgba(0,0,0,.3); flex-shrink:0;}
+  .mg-island img{width:30px; height:21px; object-fit:contain;}
+  .mg-island .mi-t{font-size:12px; font-weight:700; color:#fff; line-height:1.2;}
+  .mg-island .mi-s{font-size:8px; color:#22d3ee;}
+  .mg-island .mi-n{margin-left:auto; font-size:8px; color:#4ADE80; font-weight:700; background:rgba(74,222,128,.12); padding:2px 7px; border-radius:6px;}
+  /* 动态生成的管理界面 */
+  .mg-body{flex:1; overflow:auto; padding:13px 14px;}
+  .mg-sec-t{font-size:10px; color:var(--brand); font-weight:700; letter-spacing:1px; margin:4px 0 9px; display:flex; align-items:center; gap:6px;}
+  .mg-sec-t .auto{font-size:8px; color:var(--ok); background:#e2f2e7; padding:1px 6px; border-radius:4px; font-weight:700;}
+  /* 插件监测卡（动态生成） */
+  .plug-card{background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:9px; box-shadow:0 3px 10px rgba(74,95,168,.1); animation:cardIn .5s; opacity:0; animation-fill-mode:forwards;}
+  @keyframes cardIn{from{opacity:0; transform:translateY(12px) scale(.96);} to{opacity:1; transform:none;}}
+  .plug-card.is-new{border-color:var(--ok); box-shadow:0 6px 18px rgba(46,142,82,.25);}
+  .pc-h{display:flex; align-items:center; gap:9px;}
+  .pc-ava{width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; color:#fff; flex-shrink:0;}
+  .pc-name{font-size:11px; font-weight:800; color:var(--txt);}
+  .pc-repo{font-size:8px; color:var(--dim); font-family:Menlo,monospace; margin-top:1px;}
+  .pc-star{margin-left:auto; font-size:9px; color:var(--warn); font-weight:700; flex-shrink:0;}
+  .pc-new-badge{font-size:7px; background:var(--ok); color:#fff; padding:1px 5px; border-radius:4px; font-weight:800; margin-left:5px;}
+  /* 监测指标 */
+  .pc-metrics{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px;}
+  .pc-m{background:var(--bg2); border-radius:8px; padding:6px 4px; text-align:center;}
+  .pc-m .v{font-size:12px; font-weight:800; color:var(--brand);}
+  .pc-m .v.ok{color:var(--ok);} .pc-m .v.warn{color:var(--warn);}
+  .pc-m .k{font-size:7px; color:var(--dim); margin-top:2px; letter-spacing:.5px;}
+  /* 操作行 */
+  .pc-acts{display:flex; gap:6px; margin-top:10px;}
+  .pc-act{flex:1; font-size:9px; font-weight:700; padding:6px; border-radius:8px; border:1px solid var(--line); background:var(--bg2); color:var(--brand); cursor:pointer; text-align:center; transition:all .15s;}
+  .pc-act:hover{background:#e4eaf7;}
+  .pc-act.on{background:var(--ok); color:#fff; border-color:var(--ok);}
+  .pc-act.update{background:#eef1fb; color:var(--run); border-color:var(--brand3);}
+  /* 状态条 */
+  .pc-status{display:flex; align-items:center; gap:6px; margin-top:9px; font-size:8px; color:var(--dim);}
+  .pc-status .sdot{width:6px; height:6px; border-radius:50%;}
+  .pc-status .sdot.run{background:var(--ok); box-shadow:0 0 4px var(--ok); animation:blink 1.4s infinite;}
+  .pc-status .sdot.off{background:var(--brand3);}
+
+  /* 底部功能卡 */
+  .feat{margin-top:48px; display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  .fcard{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 4px 14px rgba(74,95,168,.08); transition:transform .2s;}
+  .fcard:hover{transform:translateY(-3px);}
+  .fcard .fi{font-size:22px; margin-bottom:9px;}
+  .fcard h3{font-size:13px; margin-bottom:5px;}
+  .fcard p{font-size:11px; color:var(--dim); line-height:1.6;}
+  .fcard .hl{color:var(--brand); font-weight:700;}
+
+  .dock{position:fixed; bottom:22px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:99; background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:999px; padding:10px 14px; box-shadow:0 12px 40px rgba(74,95,168,.2);}
+  .dock button{padding:9px 18px; font-size:12px; font-weight:700; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--txt); cursor:pointer;}
+  .dock button.primary{background:linear-gradient(90deg,#4a5fa8,#7f96d2); color:#fff; border:none;}
+  .statusline{position:fixed; bottom:80px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--brand); z-index:99; letter-spacing:1px; font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="badge">动 态 接 口 映 射</div>
+    <h1>手机管理端，不写死任何一个功能</h1>
+    <p>DSH 启动即暴露能力清单，手机端拉取后动态生成管理界面 —— 装新插件，自动多一个入口，App 永不过时。</p>
+  </div>
+
+  <!-- 架构流程 -->
+  <div class="arch">
+    <div class="arch-node"><div class="an-i">🚀</div><div class="an-t">DSH 启动</div><div class="an-s">web 服务 127.0.0.1:3080</div></div>
+    <div style="flex:1;min-width:40px;max-width:90px;"><div class="arch-arrow"></div><div class="arch-tag">暴露 /api/capabilities</div></div>
+    <div class="arch-node"><div class="an-i">📡</div><div class="an-t">能力清单</div><div class="an-s">原生功能 + 全部插件接口</div></div>
+    <div style="flex:1;min-width:40px;max-width:90px;"><div class="arch-arrow"></div><div class="arch-tag">手机拉取</div></div>
+    <div class="arch-node"><div class="an-i">📱</div><div class="an-t">动态生成 UI</div><div class="an-s">一个接口 → 一个入口</div></div>
+    <div style="flex:1;min-width:40px;max-width:90px;"><div class="arch-arrow"></div><div class="arch-tag">操作转发</div></div>
+    <div class="arch-node"><div class="an-i">⚙️</div><div class="an-t">管理监测</div><div class="an-s">启停 / 状态 / 更新</div></div>
+  </div>
+
+  <div class="stage">
+    <!-- 左：DSH 能力清单 -->
+    <div class="dsh-end">
+      <div class="end-tag">💻 DSH 服务 · 暴露的能力清单</div>
+      <div class="dsh-box">
+        <div class="db-head">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="tt">GET /api/capabilities</span>
+          <span class="port">:3080</span>
+        </div>
+        <div class="db-body">
+          <div class="cap-title"><span class="pulse-dot"></span>能力清单（实时，新插件自动追加）</div>
+          <div class="cap-list" id="capList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 同步光束 -->
+    <div class="map-link">
+      <div class="lbl">接口<br>动态映射</div>
+      <div class="bm"><div class="pp"></div><div class="pp pp2"></div></div>
+    </div>
+
+    <!-- 右：手机管理端 -->
+    <div class="phone-end">
+      <div class="end-tag">📱 手机管理端 · 动态生成的界面</div>
+      <div class="mg-phone">
+        <div class="mg-screen">
+          <div class="mg-island">
+            <img src="assets/whale-half.png" alt="">
+            <div><div class="mi-t">DSH 管理端</div><div class="mi-s">接口映射 · 自动生成</div></div>
+            <span class="mi-n" id="plugCount">0 插件</span>
+          </div>
+          <div class="mg-body" id="mgBody">
+            <div class="mg-sec-t">已接入插件 · 实时监测 <span class="auto">AUTO</span></div>
+            <div id="plugCards"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 功能说明 -->
+  <div class="feat">
+    <div class="fcard"><div class="fi">🔌</div><h3>接口自动发现</h3><p>不写死任何功能。DSH 暴露什么接口，手机就长出什么入口，<span class="hl">新插件即插即用</span>。</p></div>
+    <div class="fcard"><div class="fi">📊</div><h3>插件实时监测</h3><p>每个插件的<span class="hl">状态、调用量、资源占用</span>实时可见，异常立刻察觉。</p></div>
+    <div class="fcard"><div class="fi">🎛️</div><h3>远程启停 + 更新</h3><p>一键启用/停用、检测新版本并远程更新，<span class="hl">管理不必回电脑</span>。</p></div>
+    <div class="fcard"><div class="fi">🌟</div><h3>高星生态接入</h3><p>open-design、modlens 等<span class="hl">高 star 第三方插件</span>统一纳入管理视野。</p></div>
+  </div>
+</div>
+
+<div class="statusline" id="statusline">点"开始映射演示"看接口如何动态生成界面</div>
+<div class="dock">
+  <button class="primary" onclick="playDemo()">▶ 开始映射演示</button>
+  <button onclick="recordGIF()">🎬 录制 GIF</button>
+  <button onclick="addNewPlugin()">✨ 模拟装新插件</button>
+  <button onclick="resetDemo()">↺ 重置</button>
+  <button onclick="exportPNG()">📷 导出图片</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+<script>
+  const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+  const say=(t)=>document.getElementById('statusline').textContent=t;
+  let playing=false, shown=0;
+
+  // 真实高 star 第三方插件（名字/仓库/star 来自 GitHub 实况）
+  const PLUGINS=[
+    {icon:'🎨', color:'#7c6cd9', name:'open-design', repo:'nexu-io/open-design', star:'87.4k', route:'/api/plugins/open-design', calls:'1.2k', mem:'84M', status:'run'},
+    {icon:'👁️', color:'#2b7cd9', name:'modlens', repo:'liustack/modlens', star:'2.3k', route:'/api/plugins/modlens', calls:'486', mem:'132M', status:'run'},
+    {icon:'🧩', color:'#4a5fa8', name:'dsh-web-ui', repo:'zhu1090093659/dsh-web-ui', star:'3.3k', route:'/api/plugins/web-ui', calls:'2.1k', mem:'58M', status:'run'},
+    {icon:'📺', color:'#e05c5c', name:'OpenBiliClaw', repo:'whiteguo233/OpenBiliClaw', star:'2.7k', route:'/api/plugins/biliclaw', calls:'97', mem:'210M', status:'run'},
+    {icon:'🖥️', color:'#2e8e52', name:'dsh-desktop', repo:'anywhere-labs/dsh-desktop', star:'8.5k', route:'/api/plugins/desktop', calls:'312', mem:'96M', status:'run'},
+  ];
+  // 模拟"新装的插件"
+  const NEW_PLUGIN={icon:'✨', color:'#c08a33', name:'voyager', repo:'Nagi-ovo/voyager', star:'19.5k', route:'/api/plugins/voyager', calls:'0', mem:'45M', status:'run'};
+
+  function renderCaps(list){
+    const box=document.getElementById('capList'); box.innerHTML='';
+    box.innerHTML+='<div class="cap-line"><span class="cm"># 原生能力</span></div>';
+    box.innerHTML+='<div class="cap-line"><span class="route">GET</span> /api/sessions  <span class="cm"># 会话</span></div>';
+    box.innerHTML+='<div class="cap-line"><span class="route">GET</span> /api/models    <span class="cm"># 模型</span></div>';
+    box.innerHTML+='<div class="cap-line"><span class="route">GET</span> /api/cron      <span class="cm"># 定时任务</span></div>';
+    box.innerHTML+='<div class="cap-line"><span class="cm"># 已装载插件</span></div>';
+    list.forEach((p,i)=>{
+      box.innerHTML+=`<div class="cap-line" style="animation-delay:${i*0.05}s"><span class="route">GET</span> <span class="plug">${p.route}</span> <span class="star">★${p.star}</span>${p._new?'<span class="new"> ✦NEW</span>':''}</div>`;
+    });
+  }
+
+  function plugCard(p, idx){
+    return `<div class="plug-card ${p._new?'is-new':''}" style="animation-delay:${idx*0.12}s">
+      <div class="pc-h">
+        <div class="pc-ava" style="background:linear-gradient(135deg,${p.color},${p.color}cc)">${p.icon}</div>
+        <div><div class="pc-name">${p.name}${p._new?'<span class="pc-new-badge">NEW</span>':''}</div><div class="pc-repo">${p.repo}</div></div>
+        <span class="pc-star">★ ${p.star}</span>
+      </div>
+      <div class="pc-metrics">
+        <div class="pc-m"><div class="v ok">●</div><div class="k">运行中</div></div>
+        <div class="pc-m"><div class="v">${p.calls}</div><div class="k">调用量</div></div>
+        <div class="pc-m"><div class="v ${parseInt(p.mem)>150?'warn':''}">${p.mem}</div><div class="k">内存</div></div>
+      </div>
+      <div class="pc-status" data-route="${p.route}"><span class="sdot run"></span> 健康 · 已映射 ${p.route}</div>
+      <div class="pc-acts">
+        <div class="pc-act on" onclick="toggleAct(this,'${p.name}')">停用</div>
+        <div class="pc-act update" onclick="checkUpdate(this,'${p.name}')">检查更新</div>
+        <div class="pc-act" onclick="openPlug('${p.name}')">打开</div>
+      </div>
+    </div>`;
+  }
+
+  async function renderPlugins(list, animate){
+    const box=document.getElementById('plugCards');
+    box.innerHTML=list.map((p,i)=>plugCard(p,i)).join('');
+    document.getElementById('plugCount').textContent=list.length+' 插件';
+    if(animate){ /* CSS animation-delay 已处理逐个入场 */ }
+  }
+
+  async function playDemo(){
+    if(playing) return; playing=true; resetDemo(true);
+    say('🚀 DSH 启动，暴露能力清单 /api/capabilities…');
+    renderCaps([]); await sleep(900);
+    say('📡 手机端拉取能力清单…'); await sleep(800);
+    // 逐个揭示插件
+    const revealed=[];
+    for(const p of PLUGINS){
+      revealed.push(p); renderCaps(revealed); renderPlugins(revealed,true);
+      say(`🔌 发现并映射插件：${p.name}（★${p.star}）`);
+      await sleep(850);
+    }
+    say('✨ 全部插件已动态生成管理入口 · 接口零硬编码');
+    playing=false; shown=PLUGINS.length;
+  }
+
+  async function addNewPlugin(){
+    if(shown < PLUGINS.length){ await playDemo(); }
+    if(PLUGINS.includes(NEW_PLUGIN)) { say('✨ voyager 已在清单中'); return; }
+    NEW_PLUGIN._new=true;
+    PLUGINS.push(NEW_PLUGIN);
+    renderCaps(PLUGINS); renderPlugins(PLUGINS,true);
+    say('✨ 检测到新插件 voyager（★19.5k）→ 手机端自动新增入口，无需更新 App');
+    // 滚动到新卡
+    setTimeout(()=>{ const b=document.getElementById('mgBody'); b.scrollTop=b.scrollHeight; },300);
+  }
+
+  function toggleAct(el,name){
+    const card=el.closest('.plug-card');
+    el.classList.toggle('on');
+    const running=el.classList.contains('on');
+    el.textContent=running?'停用':'启用';
+    const st=card.querySelector('.pc-status');
+    if(running){
+      st.innerHTML=`<span class="sdot run"></span> 健康 · 已映射 ${st.dataset.route}`;
+    }else{
+      st.innerHTML='<span class="sdot off"></span> 已停用 · 映射保留';
+    }
+    say((running?'✅ 已启用 ':'⛔ 已停用 ')+name+'（指令已转发 DSH 接口）');
+  }
+  function checkUpdate(el,name){
+    el.textContent='检查中…'; say('🔄 检查 '+name+' 更新…');
+    setTimeout(()=>{ el.textContent='✓ 已最新'; say('✅ '+name+' 已是最新版本'); },1200);
+    setTimeout(()=>{ el.textContent='检查更新'; },2600);
+  }
+  function openPlug(name){ say('↗ 打开手机端 '+name+' 的管理界面'); }
+
+  function resetDemo(silent){
+    shown=0; PLUGINS.length=5; NEW_PLUGIN._new=false;
+    // 移除可能加入的 NEW_PLUGIN
+    for(let i=PLUGINS.length-1;i>=0;i--){ if(PLUGINS[i]===NEW_PLUGIN) PLUGINS.splice(i,1); }
+    document.getElementById('capList').innerHTML='';
+    document.getElementById('plugCards').innerHTML='';
+    document.getElementById('plugCount').textContent='0 插件';
+    if(!silent) say('已重置 · 点"开始映射演示"');
+  }
+
+  function exportPNG(){
+    say('📷 渲染图片…');
+    html2canvas(document.body,{backgroundColor:'#e8ecf5',scale:1.5}).then(c=>{
+      const a=document.createElement('a'); a.download='dsh-island-手机管理端.png'; a.href=c.toDataURL('image/png'); a.click();
+      say('✅ 已导出 dsh-island-手机管理端.png');
+    }).catch(()=>say('⚠ 导出失败，请用 Cmd+Shift+4'));
+  }
+
+  /* === GIF 录制：边播演示边截帧，编码下载 === */
+  let recTimer=null;
+  async function recordGIF(){
+    if(recTimer){ say('⏳ 正在录制中…'); return; }
+    if(typeof GIF==='undefined'||typeof html2canvas==='undefined'){
+      say('⚠ gif.js 未加载（需联网），请改用 Cmd+Shift+4 录屏');
+      return;
+    }
+    if(location.protocol==='file:'){
+      say('⚠ 请在本地服务器打开页面（如 python3 -m http.server）再录制 GIF');
+      return;
+    }
+    say('🎬 开始录制：将自动重播 8 秒"动态映射"演示…');
+    await sleep(600);
+    resetDemo(true);
+    const gif=new GIF({
+      workers: (navigator.hardwareConcurrency||4),
+      workerScript:'assets/js/gif.worker.js',
+      quality:12,
+      background:'#e8ecf5'
+    });
+    const FRAMES=52, STEP=140; // ~7.3s
+    let i=0;
+    const tick=()=>{
+      if(i>=FRAMES){
+        clearInterval(recTimer); recTimer=null;
+        say('⏳ 编码 GIF（多线程，约 10 秒，请稍候）…');
+        gif.render();
+        return;
+      }
+      i++;
+      html2canvas(document.body,{backgroundColor:'#e8ecf5',scale:1.0,useCORS:true}).then(c=>{
+        gif.addFrame(c,{delay:STEP});
+      }).catch(()=>{});
+    };
+    recTimer=setInterval(tick,STEP);
+    gif.on('finished',(blob)=>{
+      const a=document.createElement('a'); a.download='dsh-island-手机管理端.gif';
+      a.href=URL.createObjectURL(blob); a.click();
+      say('✅ 已导出 dsh-island-手机管理端.gif');
+    });
+    gif.on('progress',(p)=>{ say('⏳ 编码中 '+Math.round(p*100)+'%…'); });
+    playDemo();
+  }
+</script>
+</body>
+</html>

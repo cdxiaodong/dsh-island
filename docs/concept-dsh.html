@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dsh-island × DSH · 联动概念演示</title>
+<style>
+  :root{
+    /* blue-fantasy 官方配色 */
+    --bg:#e8ecf5; --bg2:#eef1fb; --bg3:#dce3f7;
+    --brand:#4a5fa8; --brand2:#7f96d2; --brand3:#a5b7e2;
+    --card:#ffffff; --line:#d6dae6;
+    --txt:#1d2539; --dim:#6b738a;
+    --ok:#2e8e52; --warn:#c08a33; --err:#e05c5c; --run:#2b7cd9;
+    --dev:#101624; --dev2:#1a2342; --devline:#2a3560; --devtxt:#e6ecff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,"PingFang SC",sans-serif;}
+  body{background:linear-gradient(180deg,#eef1fb 0%,#e8ecf5 40%,#e3e8f2 100%); color:var(--txt); min-height:100vh;}
+  .wrap{max-width:1560px; margin:0 auto; padding:40px 30px 90px;}
+
+  /* 顶部 */
+  .hero{text-align:center; margin-bottom:44px;}
+  .badge{display:inline-block; font-size:11px; letter-spacing:2px; color:var(--brand);
+    border:1px solid var(--brand3); border-radius:999px; padding:5px 16px; background:#fff; margin-bottom:18px; font-weight:600;}
+  .hero h1{font-size:42px; font-weight:800; letter-spacing:.5px;
+    background:linear-gradient(90deg,#4a5fa8,#7f96d2 45%,#2b7cd9); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .hero p{color:var(--dim); font-size:15px; margin-top:12px;}
+
+  /* ===== 主舞台：DSH 界面 | Mac灵动岛面板 | iPhone灵动岛（横向一列看全） ===== */
+  .stage{position:relative; display:flex; justify-content:center; align-items:flex-start; gap:26px; margin-top:20px;}
+  .stage-left{position:relative;}
+
+  /* Mac 灵动岛（独立一列，非悬浮） */
+  .mac-isl-col{display:flex; flex-direction:column; align-items:center; gap:16px; min-width:340px;}
+  .mac-isl-col .col-tag{font-size:12px; color:var(--dim); letter-spacing:1px; font-weight:600;}
+  /* 胶囊条（模拟菜单栏里的样子） */
+  .menubar-strip{width:100%; height:40px; background:linear-gradient(#f7f8fb,#eef1fb); border:1px solid var(--line); border-radius:14px;
+    display:flex; align-items:center; justify-content:flex-end; padding:0 14px; box-shadow:0 6px 18px rgba(74,95,168,.12);}
+  /* 面板容器（常开显示） */
+  .isl-panel-wrap{width:100%; display:flex; flex-direction:column; align-items:center; gap:8px;}
+  .isl-arrow{font-size:16px; color:var(--brand2);}
+
+  /* iPhone（浅色屏 + 灵动岛会话同步） */
+  .dsh-phone{width:250px; height:520px; border-radius:42px; background:#04060e; padding:11px;
+    box-shadow:0 30px 70px rgba(74,95,168,.3); border:1px solid var(--devline); flex-shrink:0;}
+  .dsh-pscreen{position:relative; width:100%; height:100%; border-radius:32px; overflow:hidden; background:linear-gradient(#eef1fb,#dbe2f2);}
+  /* 手机灵动岛（黑胶囊贴刘海） */
+  .ph-island{position:absolute; top:12px; left:50%; transform:translateX(-50%); background:#000; border-radius:22px;
+    overflow:hidden; cursor:pointer; z-index:20; width:98px; height:27px;
+    transition:width .5s cubic-bezier(.3,1.1,.4,1), height .5s cubic-bezier(.3,1.1,.4,1), border-radius .5s;
+    box-shadow:0 8px 22px rgba(0,0,0,.35);}
+  .ph-island.mid{width:200px; height:38px; border-radius:21px;}
+  .ph-island.big{width:224px; height:250px; border-radius:26px;}
+  .pic{position:absolute; inset:0; display:flex; align-items:center; justify-content:space-between; padding:0 9px; transition:opacity .2s;}
+  .pic img{width:20px; height:14px; object-fit:contain;}
+  .pic .ld{width:6px; height:6px; border-radius:50%; background:var(--run); box-shadow:0 0 7px var(--run); animation:blink 1.5s infinite;}
+  .pim{position:absolute; inset:0; display:flex; align-items:center; gap:8px; padding:0 12px; opacity:0; transition:opacity .25s .12s;}
+  .pim img{width:28px; height:19px; object-fit:contain;}
+  .pim .t{font-size:11px; font-weight:700; color:#fff; line-height:1.1;} .pim .s{font-size:9px; color:var(--run);}
+  .pim .c{margin-left:auto; font-size:13px; font-weight:800; color:#4ADE80;}
+  .pib{position:absolute; inset:0; padding:12px; opacity:0; transition:opacity .25s .18s; display:flex; flex-direction:column;}
+  .pib .hd{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .pib .hd img{width:30px; height:34px; object-fit:contain;}
+  .pib .hd b{font-size:11px; color:#fff;} .pib .hd small{display:block; font-size:8px; color:#93a0d8;}
+  /* 手机里的会话列表（浅色卡片） */
+  .ph-sess{flex:1; overflow:auto; display:flex; flex-direction:column; gap:5px;}
+  .ph-sess .psess{background:#fff; border-radius:9px; padding:7px 8px; display:flex; align-items:center; gap:7px;}
+  .ph-sess .psess .pa{width:20px; height:20px; border-radius:6px; background:linear-gradient(135deg,#eef1fb,#dce3f7); display:flex; align-items:center; justify-content:center; font-size:11px;}
+  .ph-sess .psess .pt{font-size:9px; font-weight:700; color:var(--txt); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .ph-sess .psess .ps{font-size:7px; color:var(--dim);}
+  .ph-sess .psess .pd{width:6px; height:6px; border-radius:50%; flex-shrink:0;}
+  .ph-sess .psess .pd.run{background:var(--run); box-shadow:0 0 4px var(--run); animation:blink 1.4s infinite;}
+  .ph-sess .psess .pd.ok{background:var(--ok);} .ph-sess .psess .pd.idle{background:var(--brand3);}
+  .ph-island.mid .pic,.ph-island.big .pic{opacity:0;}
+  .ph-island.mid .pim{opacity:1;}
+  .ph-island.big .pib{opacity:1;} .ph-island.big .pim{opacity:0;}
+  /* 手机壁纸 */
+  .ph-wall{position:absolute; top:300px; left:0; right:0; text-align:center;}
+  .ph-wall img{width:110px; height:124px; object-fit:contain; animation:bob 3s ease-in-out infinite;}
+  .ph-wall span{font-size:10px; color:var(--brand); font-weight:600; display:block; margin-top:4px;}
+  .ph-home{position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:100px; height:4px; background:rgba(29,37,57,.25); border-radius:3px;}
+  .ph-tag{text-align:center; font-size:12px; color:var(--dim); letter-spacing:1px; margin-top:14px; font-weight:600;}
+
+  /* 中间同步光束 */
+  .dsh-link{display:flex; flex-direction:column; align-items:center; gap:10px;}
+  .dsh-link .lbl{font-size:11px; color:var(--brand); letter-spacing:1px; text-align:center; line-height:1.7; font-weight:700;}
+  .dsh-link .bm{width:2px; height:150px; background:linear-gradient(var(--brand2),rgba(127,150,210,.05)); position:relative;}
+  .dsh-link .bm .pp{position:absolute; left:50%; width:8px; height:8px; border-radius:50%; background:var(--brand2); box-shadow:0 0 12px var(--brand2); transform:translateX(-50%); animation:flow 1.5s linear infinite;}
+  .dsh-link .bm .pp2{animation-delay:.75s;}
+
+  /* DSH 聊天窗口（高保真） */
+  .dsh-window{
+    width:600px; flex-shrink:0; border-radius:20px; overflow:hidden; background:var(--card);
+    border:1px solid var(--line); box-shadow:0 40px 100px rgba(74,95,168,.22);
+    display:flex; flex-direction:column;
+  }
+  .dsh-titlebar{height:44px; background:linear-gradient(#f7f8fb,#eef1fb); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; padding:0 16px; gap:10px;}
+  .tl-dot{width:11px; height:11px; border-radius:50%;}
+  .tl-dot.r{background:#ff5f57;} .tl-dot.y{background:#febc2e;} .tl-dot.g{background:#28c840;}
+  .dsh-title{font-size:13px; font-weight:700; color:var(--brand); margin-left:8px;}
+  .dsh-sub{font-size:11px; color:var(--dim); margin-left:4px;}
+
+  .dsh-body{display:flex; flex:1; min-height:520px;}
+  /* 侧边栏 */
+  .dsh-side{width:150px; background:#f7f8fb; border-right:1px solid var(--line); padding:14px 8px; display:flex; flex-direction:column; gap:4px;}
+  .side-label{font-size:10px; color:var(--dim); letter-spacing:1px; padding:6px 10px; text-transform:uppercase;}
+  .side-item{display:flex; align-items:center; gap:7px; padding:8px 8px; border-radius:9px; font-size:11px; color:var(--txt); cursor:pointer; transition:background .15s; overflow:hidden; white-space:nowrap;}
+  .side-item:hover{background:#eef1fb;}
+  .side-item.active{background:linear-gradient(90deg,#dce3f7,#e4eaf7); color:var(--brand); font-weight:700;}
+  .side-item .si{width:16px; text-align:center;}
+  .side-plug{margin-top:auto; padding:10px; background:#eef1fb; border-radius:11px; border:1px solid var(--line);}
+  .side-plug .sp-t{font-size:10px; color:var(--brand); font-weight:700; margin-bottom:6px;}
+  .side-plug .sp-i{display:flex; align-items:center; gap:6px; font-size:10px; color:var(--dim); padding:2px 0;}
+  .side-plug .on{width:6px; height:6px; border-radius:50%; background:var(--ok);}
+
+  /* 聊天主区 */
+  .dsh-chat{flex:1; display:flex; flex-direction:column; background:#fff;}
+  .chat-scroll{flex:1; padding:20px 24px; overflow:hidden; display:flex; flex-direction:column; gap:16px;}
+  .msg{display:flex; gap:12px; max-width:88%; animation:msgIn .4s;}
+  @keyframes msgIn{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;}}
+  .msg .avatar{width:32px; height:32px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px;}
+  .msg.user{margin-left:auto; flex-direction:row-reverse;}
+  .msg.user .avatar{background:linear-gradient(135deg,#4a5fa8,#7f96d2); color:#fff;}
+  .msg.ai .avatar{background:#eef1fb; border:1px solid var(--line);}
+  .msg .bubble{background:#f7f8fb; border:1px solid var(--line); border-radius:14px; padding:11px 14px; font-size:13px; line-height:1.6; color:var(--txt);}
+  .msg.user .bubble{background:linear-gradient(135deg,#4a5fa8,#647ebf); color:#fff; border:none;}
+  .msg .bubble code{background:#eef1fb; padding:1px 6px; border-radius:5px; font-family:Menlo,monospace; font-size:11px; color:var(--brand);}
+  .msg.user .bubble code{background:rgba(255,255,255,.2); color:#fff;}
+
+  /* 工具调用卡（在 AI 消息里） */
+  .tool-call{margin-top:10px; background:#eef1fb; border:1px solid var(--brand3); border-radius:11px; padding:9px 12px; font-size:11px;}
+  .tool-call .tc-h{display:flex; align-items:center; gap:7px; color:var(--brand); font-weight:700;}
+  .tool-call .tc-h .spin{width:10px; height:10px; border:2px solid var(--brand3); border-top-color:var(--brand); border-radius:50%; animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .tool-call .tc-b{font-family:Menlo,monospace; font-size:10px; color:var(--dim); margin-top:5px;}
+  .tool-done .tc-h{color:var(--ok);}
+  .tool-done .spin{border:none; animation:none;}
+  .tool-done .spin::after{content:"✓"; font-size:12px;}
+
+  /* 输入框 */
+  .chat-input{padding:16px 24px; border-top:1px solid var(--line); background:#f7f8fb;}
+  .input-box{display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px 14px; box-shadow:0 2px 8px rgba(74,95,168,.08);}
+  .input-box .ph{flex:1; font-size:13px; color:var(--dim);}
+  .input-box .send{width:32px; height:32px; border-radius:9px; background:linear-gradient(135deg,#4a5fa8,#7f96d2); color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer;}
+  .input-hint{display:flex; gap:12px; margin-top:8px; font-size:10px; color:var(--dim);}
+
+  /* ===== Mac 灵动岛（文档流里独立一列，常开显示） ===== */
+  .float-island{display:flex; flex-direction:column; align-items:center; gap:0;}
+  .fi-capsule{display:flex; align-items:center; gap:7px; height:30px; padding:0 14px 0 4px;
+    background:linear-gradient(#A8CCFF,#7FA8F0); border:2px solid rgba(74,95,168,.5);
+    border-radius:999px; cursor:pointer; box-shadow:0 8px 24px rgba(74,95,168,.35); transition:transform .15s;}
+  .fi-capsule:hover{transform:scale(1.06);}
+  .fi-capsule img{width:34px; height:23px; object-fit:contain;}
+  .fi-capsule .dt{width:8px; height:8px; border-radius:50%; background:var(--run); box-shadow:0 0 8px var(--run);}
+  .fi-capsule .tx{font-size:12px; font-weight:800; color:#4a5fa8;}
+  /* 灵动岛展开的卡片（浅色渐变，常开可见） */
+  .fi-panel{margin-top:8px; width:320px; background:linear-gradient(#ffffff,#eef1fb); border-radius:16px; overflow:hidden;
+    border:1px solid var(--brand3); box-shadow:0 24px 60px rgba(74,95,168,.3);
+    transition:all .3s cubic-bezier(.2,.9,.3,1.2);}
+  .fi-panel.mini{opacity:.35; transform:scale(.92); pointer-events:none;}
+  .fi-head{background:linear-gradient(#AFC0EA,#7F96D2); padding:10px 14px; display:flex; align-items:center; gap:10px;}
+  .fi-head img{width:34px; height:38px; object-fit:contain;}
+  .fi-head b{font-size:13px; color:#fff; text-shadow:0 1px 2px rgba(46,71,117,.3);}
+  .fi-head small{display:block; font-size:10px; color:rgba(255,255,255,.85);}
+  .fi-body{padding:12px 14px;}
+  .fi-row{display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin-bottom:9px;}
+  .fi-row b{color:var(--brand);}
+  .fi-bar{height:6px; background:#dce3f7; border-radius:4px; overflow:hidden; margin-bottom:10px;}
+  .fi-bar i{display:block; height:100%; width:40%; background:linear-gradient(90deg,#4a5fa8,#7f96d2); transition:width .6s;}
+  .fi-evt{font-size:11px; color:var(--txt); background:#fff; border:1px solid var(--line); border-radius:8px; padding:6px 9px; margin-top:5px; display:flex; gap:6px; align-items:center;}
+  .fi-evt .t{font-size:8px; padding:1px 5px; border-radius:4px; background:#eef1fb; color:var(--run);}
+  .fi-evt .t.ok{color:var(--ok);}
+
+  /* session 会话列表 */
+  .fi-sess{display:flex; flex-direction:column; gap:6px; max-height:180px; overflow:auto;}
+  .sess{display:flex; align-items:center; gap:9px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 10px; cursor:pointer; transition:all .15s;}
+  .sess:hover{border-color:var(--brand2); background:var(--bg2);}
+  .sess.active{border-color:var(--brand); background:linear-gradient(90deg,#eef1fb,#e4eaf7);}
+  .sess .s-ava{width:26px; height:26px; border-radius:7px; background:linear-gradient(135deg,#eef1fb,#dce3f7); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0;}
+  .sess .s-t{font-size:11px; font-weight:700; color:var(--txt); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sess .s-s{font-size:9px; color:var(--dim); margin-top:1px;}
+  .sess .s-dot{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
+  .sess .s-dot.run{background:var(--run); box-shadow:0 0 5px var(--run); animation:blink 1.4s infinite;}
+  .sess .s-dot.ok{background:var(--ok);}
+  .sess .s-dot.idle{background:var(--brand3);}
+  /* session 二次展开 */
+  .sess-detail{margin-top:6px; background:linear-gradient(#eef1fb,#e4eaf7); border:1px solid var(--brand3); border-radius:10px; padding:9px 11px; display:none; animation:slideIn .25s;}
+  .sess-detail.show{display:block;}
+  .sess-detail .sd-t{font-size:10px; color:var(--brand); font-weight:700; margin-bottom:6px;}
+  .sess-detail .sd-row{display:flex; justify-content:space-between; font-size:10px; color:var(--dim); margin-bottom:5px;}
+  .sess-detail .sd-row b{color:var(--txt);}
+  .sess-detail .sd-act{display:flex; gap:6px; margin-top:7px;}
+  .sess-detail .sd-act button{flex:1; padding:5px; font-size:10px; font-weight:700; border-radius:6px; border:1px solid var(--brand2); background:#fff; color:var(--brand); cursor:pointer;}
+  .sess-detail .sd-act button:hover{background:#eef1fb;}
+
+  /* 联动提示气泡（鲸鱼娘说话） */
+  .fi-say{position:absolute; top:120px; right:-30px; z-index:30; background:#fff; border:2px solid var(--brand2);
+    border-radius:16px 16px 4px 16px; padding:11px 15px; font-size:12px; color:var(--txt); max-width:240px;
+    box-shadow:0 12px 30px rgba(74,95,168,.25); opacity:0; transform:translateY(8px); transition:all .4s; pointer-events:none;}
+  .fi-say.show{opacity:1; transform:none;}
+  .fi-say b{color:var(--brand);}
+
+  /* 连接线：灵动岛 → 聊天里的工具调用 */
+  .sync-hint{display:flex; align-items:center; gap:8px; justify-content:center; margin-top:26px; font-size:12px; color:var(--dim);}
+  .sync-hint .dotline{flex:0 0 60px; height:2px; background:repeating-linear-gradient(90deg,var(--brand2) 0 6px,transparent 6px 12px);}
+
+  /* ===== 三步联动说明 ===== */
+  .flow{margin-top:70px;}
+  .flow h2{text-align:center; font-size:26px; font-weight:800; color:var(--brand); margin-bottom:6px;}
+  .flow .fs{text-align:center; color:var(--dim); font-size:13px; margin-bottom:36px;}
+  .flow-steps{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  .fstep{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px; box-shadow:0 6px 20px rgba(74,95,168,.1); position:relative;}
+  .fstep .num{position:absolute; top:-16px; left:20px; width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#4a5fa8,#7f96d2); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; box-shadow:0 4px 10px rgba(74,95,168,.4);}
+  .fstep h3{font-size:15px; margin:8px 0 8px; color:var(--txt);}
+  .fstep p{font-size:12px; color:var(--dim); line-height:1.7;}
+  .fstep .demo-mini{margin-top:14px; border-radius:12px; padding:12px; background:#f7f8fb; border:1px solid var(--line); font-size:11px;}
+  .fstep .demo-mini .dm-capsule{display:inline-flex; align-items:center; gap:5px; background:linear-gradient(#A8CCFF,#7FA8F0); border-radius:999px; padding:3px 10px 3px 3px;}
+  .fstep .demo-mini .dm-capsule img{width:22px; height:15px; object-fit:contain;}
+  .fstep .demo-mini .dm-capsule span{font-size:10px; font-weight:700; color:#0e1835;}
+
+  /* 控制坞 */
+  .dock{position:fixed; bottom:22px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:99;
+    background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:999px; padding:10px 14px; box-shadow:0 12px 40px rgba(74,95,168,.2);}
+  .dock button{padding:9px 18px; font-size:12px; font-weight:700; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--txt); cursor:pointer; transition:all .15s; white-space:nowrap;}
+  .dock button:hover{background:var(--bg2);}
+  .dock button.primary{background:linear-gradient(90deg,#4a5fa8,#7f96d2); color:#fff; border:none;}
+  .statusline{position:fixed; bottom:80px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--brand); z-index:99; letter-spacing:1px; font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="badge">D S H - I S L A N D &nbsp;×&nbsp; D E E P S E E K &nbsp;H A R N E S S</div>
+    <h1>灵动岛，长在 DSH 的对话里</h1>
+    <p>当你在 DSH 里和 AI 对话，鲸鱼娘灵动岛就在旁边实时同步 —— 状态、工具、审批，一目了然。</p>
+  </div>
+
+  <!-- ===== 主舞台 ===== -->
+  <div class="stage">
+    <!-- 左：DSH 聊天窗口（含悬浮 Mac 灵动岛） -->
+    <div class="stage-left">
+    <div class="dsh-window">
+      <div class="dsh-titlebar">
+        <span class="tl-dot r"></span><span class="tl-dot y"></span><span class="tl-dot g"></span>
+        <span class="dsh-title">DeepSeek Harness</span><span class="dsh-sub">dsh web · 127.0.0.1:3080</span>
+      </div>
+      <div class="dsh-body">
+        <!-- 侧边栏 -->
+        <div class="dsh-side">
+          <div class="side-label">会话</div>
+          <div class="side-item active"><span class="si">💬</span> 开发灵动岛插件</div>
+          <div class="side-item"><span class="si">📊</span> 数据分析脚本</div>
+          <div class="side-item"><span class="si">🐛</span> 修复登录 bug</div>
+          <div class="side-label" style="margin-top:10px;">插件</div>
+          <div class="side-item"><span class="si">🧩</span> task-board</div>
+          <div class="side-item"><span class="si">📈</span> live-stats</div>
+          <div class="side-plug">
+            <div class="sp-t">🐋 dsh-island 已联动</div>
+            <div class="sp-i"><span class="on"></span> 灵动岛 · 运行中</div>
+            <div class="sp-i"><span class="on"></span> 实时同步 · 开启</div>
+          </div>
+        </div>
+        <!-- 聊天主区 -->
+        <div class="dsh-chat">
+          <div class="chat-scroll" id="chatScroll">
+            <div class="msg user"><div class="avatar">我</div><div class="bubble">帮我给这个插件加上实时状态显示</div></div>
+            <div class="msg ai"><div class="avatar">🤖</div><div class="bubble">
+              好的，我来实现。先看一下当前的项目结构。
+              <div class="tool-call tool-done"><div class="tc-h"><span class="spin"></span> Read</div><div class="tc-b">src/index.ts · 读取完成</div></div>
+            </div></div>
+            <div class="msg ai" id="liveMsg" style="display:none;"><div class="avatar">🤖</div><div class="bubble">
+              现在开始编写状态推送逻辑，并运行测试验证。
+              <div class="tool-call" id="liveTool"><div class="tc-h"><span class="spin"></span> <span id="toolName">Bash</span></div><div class="tc-b" id="toolCmd">npm test</div></div>
+            </div></div>
+          </div>
+          <div class="chat-input">
+            <div class="input-box"><span class="ph">向 DeepSeek 提问… (输入 / 唤起命令)</span><span class="send">➤</span></div>
+            <div class="input-hint"><span>🐋 dsh-island 联动中</span><span>⌘K 命令</span><span>⏎ 发送</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 鲸鱼娘提示气泡（相对 DSH 窗口定位） -->
+    <div class="fi-say" id="fiSay"><b>鲸鱼娘：</b><span id="fiSayTx">正在帮你执行工具…</span></div>
+    </div><!-- /stage-left -->
+
+    <!-- 同步光束 1：DSH → Mac 灵动岛 -->
+    <div class="dsh-link">
+      <div class="lbl">DSH 事件</div>
+      <div class="bm"><div class="pp"></div><div class="pp pp2"></div></div>
+    </div>
+
+    <!-- 中：Mac 灵动岛（胶囊 + 常开会话面板） -->
+    <div class="mac-isl-col">
+      <div class="menubar-strip">
+        <div class="fi-capsule" id="fiCapsule">
+          <img src="assets/whale-half.png" alt="鲸鱼娘"><span class="dt" id="fiDot"></span><span class="tx" id="fiTx">空闲</span>
+        </div>
+      </div>
+      <div class="isl-arrow">⬇</div>
+      <div class="fi-panel mini" id="fiPanel">
+        <div class="fi-head"><img src="assets/whale-working.png" alt=""><div><b>鲸鱼娘灵动岛</b><small>所有 DSH 会话一览</small></div></div>
+        <div class="fi-body">
+          <div class="fi-bar"><i id="fiBar"></i></div>
+          <div class="fi-row"><span>活跃会话 <b id="fiSessN">3</b></span><span>工具 <b id="fiTools">0</b></span><span>时长 <b id="fiTime">0m</b></span></div>
+          <div class="fi-sess" id="fiSess">
+            <div class="sess active" onclick="toggleSess(this,'s1')">
+              <div class="s-ava">💬</div>
+              <div style="flex:1;min-width:0;"><div class="s-t">开发灵动岛插件</div><div class="s-s">运行中 · 3 工具 · 刚刚</div></div>
+              <span class="s-dot run"></span>
+            </div>
+            <div class="sess-detail" id="s1">
+              <div class="sd-t">会话详情 · 开发灵动岛插件</div>
+              <div class="sd-row"><span>最近工具</span><b>Edit index.ts ✓</b></div>
+              <div class="sd-row"><span>Token</span><b>2.4k</b></div>
+              <div class="sd-row"><span>模式</span><b style="color:var(--ok)">Auto · 无需批准</b></div>
+              <div class="sd-act"><button onclick="event.stopPropagation();sessJump('开发灵动岛插件')">↗ 跳转会话</button><button onclick="event.stopPropagation();sessStop('开发灵动岛插件')">■ 停止</button></div>
+            </div>
+            <div class="sess" onclick="toggleSess(this,'s2')">
+              <div class="s-ava">📊</div>
+              <div style="flex:1;min-width:0;"><div class="s-t">数据分析脚本</div><div class="s-s">已完成 · 8 工具 · 12 分钟前</div></div>
+              <span class="s-dot ok"></span>
+            </div>
+            <div class="sess-detail" id="s2">
+              <div class="sd-t">会话详情 · 数据分析脚本</div>
+              <div class="sd-row"><span>最近工具</span><b>Bash python analyze.py ✓</b></div>
+              <div class="sd-row"><span>Token</span><b>9.1k</b></div>
+              <div class="sd-row"><span>模式</span><b style="color:var(--ok)">Auto · 无需批准</b></div>
+              <div class="sd-act"><button onclick="event.stopPropagation();sessJump('数据分析脚本')">↗ 跳转会话</button><button onclick="event.stopPropagation();sessStop('数据分析脚本')">■ 停止</button></div>
+            </div>
+            <div class="sess" onclick="toggleSess(this,'s3')">
+              <div class="s-ava">🐛</div>
+              <div style="flex:1;min-width:0;"><div class="s-t">修复登录 bug</div><div class="s-s">空闲 · 5 工具 · 1 小时前</div></div>
+              <span class="s-dot idle"></span>
+            </div>
+            <div class="sess-detail" id="s3">
+              <div class="sd-t">会话详情 · 修复登录 bug</div>
+              <div class="sd-row"><span>最近工具</span><b>Read auth.ts ✓</b></div>
+              <div class="sd-row"><span>Token</span><b>4.2k</b></div>
+              <div class="sd-row"><span>模式</span><b style="color:var(--ok)">Auto · 无需批准</b></div>
+              <div class="sd-act"><button onclick="event.stopPropagation();sessJump('修复登录 bug')">↗ 跳转会话</button><button onclick="event.stopPropagation();sessStop('修复登录 bug')">■ 停止</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-tag">Mac 菜单栏灵动岛</div>
+    </div>
+
+    <!-- 同步光束 2：Mac 灵动岛 → iPhone -->
+    <div class="dsh-link">
+      <div class="lbl">WEBSOCKET<br>&lt;100ms</div>
+      <div class="bm"><div class="pp"></div><div class="pp pp2"></div></div>
+    </div>
+
+    <!-- 右：iPhone 灵动岛（会话同步到手机） -->
+    <div>
+      <div class="dsh-phone">
+        <div class="dsh-pscreen">
+          <div class="ph-island" id="phIsland" onclick="setPh((parseInt(this.dataset.s||0)+1)%3);this.dataset.s=(parseInt(this.dataset.s||0)+1)%3;">
+            <div class="pic"><img src="assets/whale-half.png" alt=""><span class="ld"></span></div>
+            <div class="pim">
+              <img src="assets/whale-half-working.png" alt="">
+              <div><div class="t">开发灵动岛插件</div><div class="s">运行中 · Auto</div></div>
+              <span class="c" id="phCnt">3</span>
+            </div>
+            <div class="pib">
+              <div class="hd"><img src="assets/whale-welcome.png" alt=""><div><b>DSH 会话</b><small>与 Mac 实时同步</small></div></div>
+              <div class="ph-sess">
+                <div class="psess"><div class="pa">💬</div><div style="flex:1;min-width:0;"><div class="pt">开发灵动岛插件</div><div class="ps">运行中 · 3 工具</div></div><span class="pd run"></span></div>
+                <div class="psess"><div class="pa">📊</div><div style="flex:1;min-width:0;"><div class="pt">数据分析脚本</div><div class="ps">已完成 · 8 工具</div></div><span class="pd ok"></span></div>
+                <div class="psess"><div class="pa">🐛</div><div style="flex:1;min-width:0;"><div class="pt">修复登录 bug</div><div class="ps">空闲 · 5 工具</div></div><span class="pd idle"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="ph-wall"><img src="assets/whale-idle.png" alt="鲸鱼娘"><span>会话同步到手机灵动岛</span></div>
+          <div class="ph-home"></div>
+        </div>
+      </div>
+      <div class="ph-tag">iPhone 灵动岛 · 会话同步</div>
+    </div>
+  </div>
+
+  <div class="sync-hint"><span>DSH 对话</span><span class="dotline"></span><span>⚡ Mac 灵动岛</span><span class="dotline"></span><span>⚡ iPhone 灵动岛 · 一屏同览</span></div>
+
+  <!-- ===== 三步联动说明 ===== -->
+  <div class="flow">
+    <h2>对话即联动 · 三步闭环</h2>
+    <div class="fs">你在 DSH 里的每一步，灵动岛都懂</div>
+    <div class="flow-steps">
+      <div class="fstep"><div class="num">1</div><h3>对话触发</h3><p>你在 DSH 发起对话，AI 开始调用工具。灵动岛立刻从"空闲"切换为"运行中"。</p>
+        <div class="demo-mini"><span class="dm-capsule"><img src="assets/whale-half-working.png" alt=""><span>运行中 ·2</span></span></div></div>
+      <div class="fstep"><div class="num">2</div><h3>实时同步</h3><p>每次工具调用、子代理启动、Token 消耗，灵动岛面板毫秒级刷新，不用切窗也能掌握进度。</p>
+        <div class="demo-mini">工具 <b>5</b> · 子代理 <b>1</b> · <b style="color:var(--run)">2.4k tokens</b></div></div>
+      <div class="fstep"><div class="num">3</div><h3>会话一览 · 按需交互</h3><p>灵动岛列出所有 DSH 会话（运行/完成/空闲），点开某个会话看详情、跳转或停止。Auto 模式全程自动，不打断心流。</p>
+        <div class="demo-mini">💬 3 个会话 · <b style="color:var(--ok)">Auto 模式 · 零打断</b></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="statusline" id="statusline">就绪 · 点击"播放联动演示"</div>
+<div class="dock">
+  <button class="primary" onclick="playDemo()">▶ 播放联动演示</button>
+  <button onclick="step()">⚡ 单步推进</button>
+  <button onclick="toggleFi()">🐋 切换灵动岛面板</button>
+  <button onclick="resetDemo()">↺ 重置</button>
+  <button onclick="exportPNG()">📷 导出图片</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+  const say=(t)=>document.getElementById('statusline').textContent=t;
+  let tools=0, secs=0, playing=false, stepIdx=0;
+
+  function render(){
+    document.getElementById('fiTools').textContent=tools;
+    document.getElementById('fiTime').textContent=Math.floor(secs/60)+'m';
+    document.getElementById('fiTx').textContent = tools>0 ? ('运行中 ·'+tools) : '空闲';
+    document.getElementById('fiBar').style.width=Math.min(95,10+tools*14)+'%';
+  }
+  setInterval(()=>{ if(tools>0){secs++; render();} },1000);
+
+  function toggleFi(){ document.getElementById('fiPanel').classList.toggle('mini'); }
+  document.getElementById('fiCapsule').onclick=toggleFi;
+
+  // session 二次展开 / 交互
+  function toggleSess(el,id){
+    document.querySelectorAll('.sess-detail').forEach(d=>{ if(d.id!==id) d.classList.remove('show'); });
+    document.querySelectorAll('.sess').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(id).classList.toggle('show');
+  }
+  function sessJump(name){ whaleSay('跳转到「'+name+'」'); say('↗ 跳转会话：'+name); }
+  function sessStop(name){ whaleSay('已停止「'+name+'」'); say('■ 停止会话：'+name); }
+
+  function flashDot(){
+    const d=document.getElementById('fiDot');
+    d.style.background='#4ADE80'; d.style.boxShadow='0 0 10px #4ADE80';
+    setTimeout(()=>{ d.style.background='var(--run)'; d.style.boxShadow='0 0 8px var(--run)'; },600);
+  }
+  function whaleSay(t){
+    document.getElementById('fiSayTx').textContent=t;
+    const s=document.getElementById('fiSay'); s.classList.add('show');
+    clearTimeout(s._t); s._t=setTimeout(()=>s.classList.remove('show'),2600);
+  }
+
+  // 手机灵动岛形态
+  function setPh(i){ document.getElementById('phIsland').className='ph-island'+(i===1?' mid':i===2?' big':''); }
+  function syncPhone(n){ document.getElementById('phCnt').textContent=n; }
+
+  // 演示脚本（auto 模式：全程无需批准，灵动岛同步会话进展）
+  const script=[
+    ()=>{ // 1. 开始运行
+      document.getElementById('liveMsg').style.display='flex';
+      document.getElementById('fiPanel').classList.remove('mini');
+      tools=1; render(); flashDot(); syncPhone(tools);
+      setPh(1);  // 手机胶囊弹成横幅
+      whaleSay('Auto 模式开启，我自动帮你跑，手机也同步啦～');
+      say('① DSH 发起对话（Auto 模式）→ Mac + 手机灵动岛同时切换"运行中"');
+    },
+    ()=>{ // 2. 工具推进
+      tools=2; render(); flashDot(); syncPhone(tools);
+      document.getElementById('toolName').textContent='Edit';
+      document.getElementById('toolCmd').textContent='src/index.ts · 写入';
+      document.querySelectorAll('.sess').forEach(s=>s.classList.remove('active'));
+      document.querySelectorAll('.sess')[0].classList.add('active');
+      whaleSay('测试通过，正在改代码…两端同步，全程不用你动手');
+      say('② 工具推进 → Mac 会话高亮 + 手机灵动岛计数同步');
+    },
+    ()=>{ // 3. 完成 + 手机展开会话列表
+      tools=3; render(); flashDot(); syncPhone(tools);
+      document.getElementById('liveTool').classList.add('tool-done');
+      document.getElementById('toolName').textContent='Edit';
+      document.getElementById('toolCmd').textContent='index.ts · 已写入 ✓';
+      document.getElementById('s1').classList.add('show');
+      setPh(2);  // 手机展开成会话列表
+      whaleSay('搞定！🎉 手机上也能看到所有会话，Auto 全程零打断');
+      say('③ 完成 → 手机灵动岛展开，同步显示所有 DSH 会话');
+    },
+  ];
+  function step(){ if(stepIdx<script.length){ script[stepIdx++](); } else { say('已到最后一步 · 点"重置"重来'); } }
+  async function playDemo(){
+    if(playing) return; playing=true; stepIdx=0; resetDemo(true);
+    for(const fn of script){ fn(); stepIdx++; await sleep(2400); }
+    say('✨ 联动演示结束 · 可重播/导出图片'); playing=false;
+  }
+  function resetDemo(silent){
+    tools=0; secs=0; stepIdx=0; render();
+    document.getElementById('liveMsg').style.display='none';
+    document.getElementById('fiSay').classList.remove('show');
+    document.querySelectorAll('.sess-detail').forEach(d=>d.classList.remove('show'));
+    document.getElementById('fiPanel').classList.add('mini');
+    setPh(0); syncPhone(0);
+    if(!silent) say('已重置');
+  }
+  function exportPNG(){
+    say('📷 渲染图片…');
+    html2canvas(document.body,{backgroundColor:'#e8ecf5',scale:1.5}).then(c=>{
+      const a=document.createElement('a'); a.download='dsh-island-dsh联动.png'; a.href=c.toDataURL('image/png'); a.click();
+      say('✅ 已导出 dsh-island-dsh联动.png');
+    }).catch(()=>say('⚠ 导出失败，请用 Cmd+Shift+4'));
+  }
+  render();
+</script>
+</body>
+</html>

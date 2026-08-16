@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dsh-island · 价值对比</title>
+<style>
+  :root{
+    --bg:#e8ecf5; --bg2:#eef1fb; --bg3:#dce3f7;
+    --brand:#4a5fa8; --brand2:#7f96d2; --brand3:#a5b7e2;
+    --card:#ffffff; --line:#d6dae6; --txt:#1d2539; --dim:#6b738a;
+    --ok:#2e8e52; --warn:#c08a33; --err:#e05c5c; --run:#2b7cd9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,"PingFang SC",sans-serif;}
+  body{background:linear-gradient(180deg,#eef1fb,#e8ecf5); color:var(--txt); min-height:100vh;}
+  .wrap{max-width:1240px; margin:0 auto; padding:44px 30px 90px;}
+
+  .hero{text-align:center; margin-bottom:40px;}
+  .badge{display:inline-block; font-size:11px; letter-spacing:2px; color:var(--brand); border:1px solid var(--brand3); border-radius:999px; padding:5px 16px; background:#fff; margin-bottom:18px; font-weight:600;}
+  .hero h1{font-size:40px; font-weight:800; background:linear-gradient(90deg,#e05c5c,#c08a33 30%,#2e8e52); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .hero p{color:var(--dim); font-size:15px; margin-top:12px;}
+
+  /* 对比双栏 */
+  .vs{display:grid; grid-template-columns:1fr 60px 1fr; gap:0; align-items:stretch; margin-top:10px;}
+  .vs-col{background:var(--card); border:1px solid var(--line); border-radius:22px; overflow:hidden; box-shadow:0 12px 34px rgba(74,95,168,.1);}
+  .vs-col.before{border-color:#f0d9d9;}
+  .vs-col.after{border-color:var(--brand2); box-shadow:0 16px 44px rgba(74,95,168,.2);}
+  .vs-head{padding:18px 24px; font-size:17px; font-weight:800; display:flex; align-items:center; gap:10px;}
+  .vs-head .vh-s{font-size:11px; font-weight:600; padding:3px 10px; border-radius:6px; margin-left:auto;}
+  .before .vs-head{background:linear-gradient(#fbf0f0,#f7e6e6); color:var(--err);}
+  .before .vs-head .vh-s{background:#f3d9d9; color:var(--err);}
+  .after .vs-head{background:linear-gradient(#AFC0EA,#7F96D2); color:#fff;}
+  .after .vs-head .vh-s{background:rgba(255,255,255,.25); color:#fff;}
+  .vs-mid{display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:800; color:var(--brand3);}
+  .vs-list{padding:10px 24px 24px;}
+  .vrow{display:flex; gap:14px; padding:16px 0; border-bottom:1px dashed var(--line); align-items:flex-start;}
+  .vrow:last-child{border-bottom:none;}
+  .vrow .vic{width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;}
+  .before .vic{background:#fbf0f0;}
+  .after .vic{background:#eef1fb;}
+  .vrow .vt{font-size:14px; font-weight:700; color:var(--txt);}
+  .vrow .vd{font-size:12px; color:var(--dim); line-height:1.6; margin-top:3px;}
+  .vrow .pain{display:inline-block; margin-top:6px; font-size:10px; font-weight:700; padding:2px 8px; border-radius:5px;}
+  .before .pain{background:#f7e0e0; color:var(--err);}
+  .after .gain{background:#e2f2e7; color:var(--ok); display:inline-block; margin-top:6px; font-size:10px; font-weight:700; padding:2px 8px; border-radius:5px;}
+
+  /* 数字统计带 */
+  .stats-band{margin-top:44px; display:grid; grid-template-columns:repeat(4,1fr); gap:18px;}
+  .stat-card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px 20px; text-align:center; box-shadow:0 6px 20px rgba(74,95,168,.1); transition:transform .2s;}
+  .stat-card:hover{transform:translateY(-4px);}
+  .stat-card .sn{font-size:38px; font-weight:800; background:linear-gradient(135deg,#4a5fa8,#2b7cd9); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .stat-card .sl{font-size:12px; color:var(--dim); margin-top:8px; line-height:1.5;}
+  .stat-card.up .sn{background:linear-gradient(135deg,#2e8e52,#4ADE80); -webkit-background-clip:text; background-clip:text;}
+
+  /* 鲸鱼娘点评 */
+  .whale-note{margin-top:40px; background:linear-gradient(135deg,#eef1fb,#e4eaf7); border:1px solid var(--brand3); border-radius:22px; padding:26px 30px; display:flex; align-items:center; gap:22px; box-shadow:0 10px 30px rgba(74,95,168,.14);}
+  .whale-note img{width:90px; height:100px; object-fit:contain; animation:bob 3s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+  .whale-note .wn-t{font-size:16px; font-weight:800; color:var(--brand); margin-bottom:6px;}
+  .whale-note .wn-d{font-size:13px; color:var(--txt); line-height:1.8;}
+  .whale-note .wn-d b{color:var(--brand);}
+
+  .dock{position:fixed; bottom:22px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:99; background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:999px; padding:10px 14px; box-shadow:0 12px 40px rgba(74,95,168,.2);}
+  .dock button{padding:9px 18px; font-size:12px; font-weight:700; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--txt); cursor:pointer;}
+  .dock button.primary{background:linear-gradient(90deg,#4a5fa8,#7f96d2); color:#fff; border:none;}
+  .statusline{position:fixed; bottom:80px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--brand); z-index:99; letter-spacing:1px; font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="badge">价 值 对 比</div>
+    <h1>一个开发者的工作日 · 前后之间</h1>
+    <p>不是炫技，是你每天都能感受到的差别 —— 少切窗、不错过、心流不断。</p>
+  </div>
+
+  <div class="vs">
+    <!-- 没有灵动岛 -->
+    <div class="vs-col before">
+      <div class="vs-head">😩 没有灵动岛<span class="vh-s">现状</span></div>
+      <div class="vs-list">
+        <div class="vrow"><div class="vic">🔄</div><div><div class="vt">反复切窗看进度</div><div class="vd">任务在后台跑，你得不停切回终端/网页看跑到哪了，一天几十次。</div><span class="pain">心流被打断</span></div></div>
+        <div class="vrow"><div class="vic">😰</div><div><div class="vt">错过关键节点</div><div class="vd">任务失败了、卡住要授权了，你没盯着就不知道，等发现时已过去很久。</div><span class="pain">白等 + 返工</span></div></div>
+        <div class="vrow"><div class="vic">📵</div><div><div class="vt">离开电脑就失联</div><div class="vd">去倒水、开会，电脑上 AI 跑出结果或要你确认，你完全不知道。</div><span class="pain">进度停摆</span></div></div>
+        <div class="vrow"><div class="vic">🧩</div><div><div class="vt">多会话一团乱</div><div class="vd">同时跑好几个会话，哪个在动、哪个好了、哪个要钱，脑子里得自己记账。</div><span class="pain">认知负担重</span></div></div>
+      </div>
+    </div>
+
+    <div class="vs-mid">⟶</div>
+
+    <!-- 有了灵动岛 -->
+    <div class="vs-col after">
+      <div class="vs-head">🐋 有了灵动岛<span class="vh-s">dsh-island</span></div>
+      <div class="vs-list">
+        <div class="vrow"><div class="vic">👀</div><div><div class="vt">一瞥即得，不切窗</div><div class="vd">菜单栏胶囊实时显示状态，眼角余光一扫就知道进展，继续写你的代码。</div><span class="gain">心流不断</span></div></div>
+        <div class="vrow"><div class="vic">🔔</div><div><div class="vt">关键时刻主动提醒</div><div class="vd">完成/失败/需授权时灵动岛主动展开，你不用盯，它来找你。</div><span class="gain">零遗漏</span></div></div>
+        <div class="vrow"><div class="vic">📱</div><div><div class="vt">手机上随手掌控</div><div class="vd">离开工位照样看进展、批操作，等咖啡的工夫就把事办了。</div><span class="gain">随时随地</span></div></div>
+        <div class="vrow"><div class="vic">🗂️</div><div><div class="vt">所有会话一屏总览</div><div class="vd">所有 DSH 会话列在灵动岛里，状态、用量一目了然，点开即管。</div><span class="gain">井井有条</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 数据带 -->
+  <div class="stats-band">
+    <div class="stat-card up"><div class="sn" data-count="90">0</div><div class="sl">% 减少切窗次数<br>状态一瞥即得</div></div>
+    <div class="stat-card up"><div class="sn" data-count="0">0</div><div class="sl">错过关键节点<br>主动提醒零遗漏</div></div>
+    <div class="stat-card"><div class="sn" data-count="100">0</div><div class="sl">ms 内同步到手机<br>离开工位不失联</div></div>
+    <div class="stat-card"><div class="sn" data-count="15">0</div><div class="sl">+ 鲸鱼娘状态动作<br>工作也有温度</div></div>
+  </div>
+
+  <!-- 鲸鱼娘点评 -->
+  <div class="whale-note">
+    <img src="assets/whale-celebrate.png" alt="鲸鱼娘">
+    <div>
+      <div class="wn-t">鲸鱼娘想说</div>
+      <div class="wn-d">好的工具不该让你围着它转。我待在菜单栏上，<b>安静时你不察觉我，需要你时我立刻出现</b>——把注意力和心流，还给你。</div>
+    </div>
+  </div>
+</div>
+
+<div class="statusline" id="statusline">价值对比 · 数字会滚动</div>
+<div class="dock">
+  <button class="primary" onclick="animNums()">▶ 播放数字动画</button>
+  <button onclick="exportPNG()">📷 导出图片</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  const say=(t)=>document.getElementById('statusline').textContent=t;
+  function animNums(){
+    document.querySelectorAll('.sn').forEach(el=>{
+      const target=parseInt(el.dataset.count); let cur=0;
+      const step=Math.max(1,Math.ceil(target/40));
+      const t=setInterval(()=>{ cur+=step; if(cur>=target){cur=target;clearInterval(t);} el.textContent=cur; },30);
+    });
+    say('✨ 数据动画播放中');
+  }
+  window.addEventListener('load',()=>setTimeout(animNums,400));
+  function exportPNG(){
+    say('📷 渲染图片…');
+    html2canvas(document.body,{backgroundColor:'#e8ecf5',scale:1.5}).then(c=>{
+      const a=document.createElement('a'); a.download='dsh-island-价值对比.png'; a.href=c.toDataURL('image/png'); a.click();
+      say('✅ 已导出 dsh-island-价值对比.png');
+    }).catch(()=>say('⚠ 导出失败，请用 Cmd+Shift+4'));
+  }
+</script>
+</body>
+</html>

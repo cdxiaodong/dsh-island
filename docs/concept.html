@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dsh-island · 产品概念演示</title>
+<style>
+  :root{
+    /* blue-fantasy 官方配色（浅色通透） */
+    --bg:#e8ecf5; --bg2:#eef1fb; --bg3:#dce3f7;
+    --brand:#4a5fa8; --brand2:#7f96d2; --brand3:#a5b7e2;
+    --card:#ffffff; --card2:#eef1fb; --line:#d6dae6;
+    --txt:#1d2539; --dim:#6b738a;
+    --ok:#2e8e52; --warn:#c08a33; --err:#e05c5c; --run:#2b7cd9;
+    /* 设备框仍用深色（真实感） */
+    --dev:#101624; --dev2:#1a2342; --devline:#2a3560; --devtxt:#e6ecff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,"PingFang SC",sans-serif;}
+  body{background:linear-gradient(180deg,#eef1fb 0%,#e8ecf5 30%,#e3e8f2 100%); color:var(--txt); overflow-x:hidden;}
+  .wrap{max-width:1300px; margin:0 auto; padding:48px 32px 90px;}
+
+  /* 头部 */
+  .hero{text-align:center; margin-bottom:8px;}
+  .badge{display:inline-block; font-size:11px; letter-spacing:2px; color:var(--brand);
+    border:1px solid var(--brand3); border-radius:999px; padding:5px 16px; background:#fff; margin-bottom:20px; font-weight:600;}
+  .hero h1{font-size:46px; font-weight:800; letter-spacing:1px;
+    background:linear-gradient(90deg,#4a5fa8,#7f96d2 45%,#2b7cd9); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .hero p{color:var(--dim); font-size:15px; margin-top:14px;}
+  .hero .sub2{color:var(--brand); font-size:12px; margin-top:8px; letter-spacing:1px; font-weight:600;}
+
+  /* 演示舞台 */
+  .stage{display:flex; gap:64px; align-items:flex-start; justify-content:center; margin-top:56px;}
+
+  /* ---- Mac ---- */
+  .mac{display:flex; flex-direction:column; align-items:center; gap:16px;}
+  .mac-screen{width:660px; border-radius:18px; overflow:visible; position:relative;
+    background:linear-gradient(#1a2342,#0f1526); border:1px solid var(--devline);
+    box-shadow:0 40px 90px rgba(74,95,168,.28), inset 0 1px 0 rgba(255,255,255,.06);}
+  .menubar{height:34px; display:flex; align-items:center; justify-content:space-between; padding:0 14px;
+    background:rgba(255,255,255,.05); border-bottom:1px solid var(--devline); border-radius:18px 18px 0 0;}
+  .mb-left{font-size:12px; color:#8b96c4; display:flex; gap:14px;}
+  .mb-right{display:flex; align-items:center; gap:12px;}
+  .mb-ico{font-size:12px; color:#8b96c4;}
+  .capsule{display:flex; align-items:center; gap:7px; height:24px; padding:0 12px 0 3px;
+    background:linear-gradient(#A8CCFF,#7FA8F0); border:1px solid rgba(46,71,117,.7);
+    border-radius:999px; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,.4); transition:transform .15s;}
+  .capsule:hover{transform:scale(1.05);}
+  .capsule .wv{display:flex; align-items:center;}
+  .capsule .wv img{width:30px; height:20px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));}
+  .capsule .dt{width:7px; height:7px; border-radius:50%; background:var(--run); box-shadow:0 0 8px var(--run);}
+  .capsule .tx{font-size:12px; font-weight:700; color:#0e1835;}
+  .panel{position:absolute; top:42px; right:14px; width:400px; border-radius:18px; overflow:hidden;
+    background:#0e1330; border:1px solid var(--devline); box-shadow:0 30px 70px rgba(0,0,0,.5);
+    transform-origin:top right; opacity:0; transform:scale(.4); pointer-events:none;
+    transition:all .3s cubic-bezier(.2,.9,.3,1.15); z-index:5;}
+  .panel.open{opacity:1; transform:scale(1); pointer-events:auto;}
+  .p-head{background:linear-gradient(#AFC0EA,#7F96D2); color:#0e1835; padding:14px 16px; display:flex; align-items:center; gap:12px;}
+  .p-head img{width:44px; height:50px; object-fit:contain;}
+  .p-head b{font-size:15px;}
+  .p-head small{display:block; font-size:11px; opacity:.75; margin-top:2px;}
+  .p-live{margin-left:auto; font-size:10px; background:rgba(6,36,15,.2); color:#0a3d1f; padding:2px 8px; border-radius:6px; font-weight:700;}
+  .p-body{padding:14px 16px; background:#0e1330;}
+  .p-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px;}
+  .stat{background:#1b2342; border:1px solid var(--devline); border-radius:11px; padding:9px 6px; text-align:center;}
+  .stat .n{font-size:18px; font-weight:800; color:var(--devtxt);}
+  .stat .l{font-size:9px; color:#8b96c4; margin-top:3px; letter-spacing:1px;}
+  .evts{display:flex; flex-direction:column; gap:6px; max-height:130px; overflow:hidden;}
+  .evt{font-size:12px; padding:8px 10px; border-radius:9px; background:#1b2342; border:1px solid var(--devline);
+    display:flex; gap:8px; align-items:center; color:var(--devtxt); animation:slideIn .35s;}
+  @keyframes slideIn{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:none;}}
+  .tag{font-size:9px; padding:2px 7px; border-radius:5px; background:#26305a; color:#8b96c4; flex-shrink:0;}
+  .tag.ok{color:#4ADE80;} .tag.run{color:#22d3ee;}
+  .appr-card{margin-top:10px; background:linear-gradient(#2a1a0a,#1c130a); border:1px solid #4a3413; border-radius:12px; padding:12px;}
+  .appr-card .a{font-size:11px; color:#FBBF24; margin-bottom:9px; display:flex; align-items:center; gap:6px;}
+  .appr-btns{display:flex; gap:8px;}
+  .btn{flex:1; padding:9px; border-radius:9px; border:none; font-size:12px; font-weight:700; cursor:pointer; transition:filter .15s;}
+  .btn:hover{filter:brightness(1.12);}
+  .b-ok{background:#4ADE80; color:#06240f;} .b-no{background:#F87171; color:#2a0606;}
+
+  /* ---- 同步链路 ---- */
+  .link{display:flex; flex-direction:column; align-items:center; gap:12px; padding-top:170px;}
+  .link-label{font-size:11px; color:var(--brand); letter-spacing:2px; text-align:center; line-height:1.8; font-weight:700;}
+  .beam{width:2px; height:200px; background:linear-gradient(var(--brand2),rgba(127,150,210,.05)); position:relative;}
+  .beam .p{position:absolute; left:50%; width:9px; height:9px; border-radius:50%; background:var(--brand2);
+    box-shadow:0 0 14px var(--brand2); transform:translateX(-50%); animation:flow 1.5s linear infinite;}
+  .beam .p2{animation-delay:.5s;} .beam .p3{animation-delay:1s;}
+  @keyframes flow{0%{top:-6px; opacity:0;}12%{opacity:1;}88%{opacity:1;}100%{top:200px; opacity:0;}}
+
+  /* ---- 手机 ---- */
+  .phone{display:flex; flex-direction:column; align-items:center; gap:16px;}
+  .phone-frame{width:270px; height:560px; border-radius:44px; background:#04060e; border:1px solid var(--devline);
+    padding:12px; box-shadow:0 40px 90px rgba(74,95,168,.35);}
+  .pscreen{position:relative; width:100%; height:100%; border-radius:34px; overflow:hidden;
+    background:linear-gradient(#e8ecf5,#dbe2f2);}
+  .island{position:absolute; top:12px; left:50%; transform:translateX(-50%); background:#000;
+    border-radius:24px; overflow:hidden; cursor:pointer; z-index:20;
+    width:100px; height:28px;
+    transition:width .5s cubic-bezier(.3,1.1,.4,1), height .5s cubic-bezier(.3,1.1,.4,1), border-radius .5s;
+    box-shadow:0 8px 24px rgba(0,0,0,.3);}
+  .island.mid{width:206px; height:38px; border-radius:22px;}
+  .island.big{width:228px; height:212px; border-radius:28px;}
+  .ic{position:absolute; inset:0; display:flex; align-items:center; justify-content:space-between; padding:0 9px; transition:opacity .2s;}
+  .ic img{width:20px; height:14px; object-fit:contain;}
+  .ic .ld{width:6px; height:6px; border-radius:50%; background:#22d3ee; box-shadow:0 0 7px #22d3ee; animation:blink 1.5s infinite;}
+  @keyframes blink{50%{opacity:.25;}}
+  .im{position:absolute; inset:0; display:flex; align-items:center; gap:9px; padding:0 13px; opacity:0; transition:opacity .25s .12s;}
+  .im img{width:30px; height:20px; object-fit:contain;}
+  .im .t{font-size:11px; font-weight:700; color:#fff; line-height:1.15;} .im .s{font-size:9px; color:#22d3ee;}
+  .im .c{margin-left:auto; font-size:14px; font-weight:800; color:#4ADE80;}
+  .ib{position:absolute; inset:0; padding:13px; opacity:0; transition:opacity .25s .18s; display:flex; flex-direction:column;}
+  .ib .hd{display:flex; align-items:center; gap:9px; margin-bottom:9px;}
+  .ib .hd img{width:38px; height:43px; object-fit:contain;}
+  .ib .hd b{font-size:12px; color:#fff;} .ib .hd small{display:block; font-size:9px; color:#93a0d8;}
+  .ib .pg{height:7px; background:#1a2140; border-radius:5px; overflow:hidden; margin:5px 0 8px;}
+  .ib .pg i{display:block; height:100%; width:52%; background:linear-gradient(90deg,#22d3ee,#4ADE80); transition:width .5s;}
+  .ib .st{display:flex; justify-content:space-between; font-size:9px; color:#93a0d8; margin-bottom:8px;}
+  .ib .st b{color:#fff; font-size:11px;}
+  .ib .ap{margin-top:auto; background:#241a0d; border:1px solid #4a3413; border-radius:11px; padding:9px;}
+  .ib .ap .a{font-size:9px; color:#FBBF24; margin-bottom:7px;}
+  .ib .btns{display:flex; gap:7px;}
+  .ib .btns button{flex:1; padding:6px; font-size:10px; font-weight:700; border:none; border-radius:7px; cursor:pointer;}
+  .island.mid .ic,.island.big .ic{opacity:0;}
+  .island.mid .im{opacity:1;}
+  .island.big .ib{opacity:1;} .island.big .im{opacity:0;}
+  .pwall{position:absolute; top:270px; left:0; right:0; text-align:center; font-size:13px; line-height:1.6;}
+  .pwall img{width:120px; height:135px; object-fit:contain; animation:bob 3s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+  .pwall span{font-size:11px; color:var(--brand); font-weight:600;}
+  .papps{position:absolute; bottom:70px; left:0; right:0; display:flex; justify-content:center; gap:16px;}
+  .app{width:42px; height:42px; border-radius:11px; background:#fff; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 2px 6px rgba(74,95,168,.12);}
+  .homebar{position:absolute; bottom:9px; left:50%; transform:translateX(-50%); width:110px; height:4px; background:rgba(29,37,57,.25); border-radius:3px;}
+  .dev-tag{font-size:12px; color:var(--dim); letter-spacing:2px; font-weight:600;}
+
+  /* ===== 概念亮点（鲸群 / 智能收敛 / 情境审批）===== */
+  .concept-sec{margin-top:90px;}
+  .concept-sec h2{text-align:center; font-size:28px; font-weight:800; margin-bottom:8px; color:var(--brand);}
+  .concept-sec .cs{text-align:center; color:var(--dim); font-size:13px; margin-bottom:40px;}
+
+  /* 鲸群多设备联动 */
+  .fleet{display:flex; gap:34px; justify-content:center; align-items:flex-end; flex-wrap:wrap;}
+  .fleet-dev{background:var(--card); border:1px solid var(--line); border-radius:20px; padding:20px; text-align:center;
+    box-shadow:0 12px 34px rgba(74,95,168,.12); width:210px;}
+  .fleet-dev .screen{border-radius:14px; height:110px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; position:relative; overflow:hidden;}
+  .fleet-dev.macmini .screen{background:linear-gradient(#1a2342,#0f1526);}
+  .fleet-dev.iphone .screen{background:linear-gradient(#e8ecf5,#dbe2f2);}
+  .fleet-dev.ipad .screen{background:linear-gradient(#1c2748,#131a35);}
+  .fleet-dev img{width:70px; height:79px; object-fit:contain;}
+  .fleet-dev.jump img{animation:fleetjump .9s ease-in-out infinite;}
+  @keyframes fleetjump{0%,100%{transform:translateY(6px) scale(.96);}40%{transform:translateY(-10px) scale(1.05);}60%{transform:translateY(-4px);}}
+  .fleet-dev .fname{font-size:12px; font-weight:700; color:var(--txt);}
+  .fleet-dev .fstat{font-size:10px; color:var(--dim); margin-top:3px;}
+  .fleet-note{text-align:center; margin-top:26px; font-size:13px; color:var(--brand); font-weight:600;}
+
+  /* 智能收敛对比 */
+  .calm{display:flex; gap:26px; justify-content:center; flex-wrap:wrap;}
+  .calm-card{width:330px; background:var(--card); border:1px solid var(--line); border-radius:20px; padding:22px; box-shadow:0 12px 34px rgba(74,95,168,.12);}
+  .calm-card .cc-t{font-size:14px; font-weight:800; margin-bottom:6px; display:flex; align-items:center; gap:8px;}
+  .calm-card .cc-d{font-size:12px; color:var(--dim); line-height:1.7; margin-bottom:14px;}
+  .calm-demo{border-radius:14px; height:90px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;}
+  .calm-demo.calm-ok{background:linear-gradient(#eef1fb,#e3e8f2);}
+  .calm-demo.calm-alert{background:linear-gradient(#fbf3e4,#f7ecd8);}
+  .mini-capsule{display:flex; align-items:center; gap:6px; height:22px; padding:0 10px 0 3px; background:linear-gradient(#A8CCFF,#7FA8F0); border-radius:999px; box-shadow:0 3px 8px rgba(74,95,168,.2);}
+  .mini-capsule img{width:26px; height:18px; object-fit:contain;}
+  .mini-capsule span{font-size:11px; font-weight:700; color:#0e1835;}
+  .calm-expand{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(192,138,51,.08);}
+  .calm-expand .exp{background:#fff; border:2px solid var(--warn); border-radius:14px; padding:10px 16px; font-size:12px; font-weight:700; color:var(--warn); box-shadow:0 8px 20px rgba(192,138,51,.25); animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+
+  /* 审批情境卡片 */
+  .context-appr{display:flex; gap:30px; justify-content:center; align-items:center; flex-wrap:wrap;}
+  .ctx-phone{width:230px; height:470px; border-radius:36px; background:#04060e; padding:11px; box-shadow:0 24px 60px rgba(74,95,168,.3); border:1px solid var(--devline);}
+  .ctx-screen{width:100%; height:100%; border-radius:28px; background:linear-gradient(#e8ecf5,#dbe2f2); position:relative; overflow:hidden;}
+  .ctx-island{position:absolute; top:12px; left:50%; transform:translateX(-50%); width:210px; background:#000; border-radius:24px; padding:12px; box-shadow:0 10px 28px rgba(0,0,0,.35);}
+  .ctx-island .ch{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .ctx-island .ch img{width:26px; height:29px; object-fit:contain;}
+  .ctx-island .ch b{font-size:11px; color:#fff;}
+  .ctx-diff{background:#0d1428; border-radius:10px; padding:8px; font-family:Menlo,monospace; font-size:8.5px; line-height:1.6; margin-bottom:8px;}
+  .ctx-diff .add{color:#4ADE80;} .ctx-diff .del{color:#F87171;} .ctx-diff .hd{color:#8b96c4;}
+  .ctx-island .cb{display:flex; gap:6px;}
+  .ctx-island .cb button{flex:1; padding:6px; font-size:10px; font-weight:700; border:none; border-radius:7px; cursor:pointer;}
+  .ctx-arrow{font-size:26px; color:var(--brand);}
+  .ctx-desc{width:280px;}
+  .ctx-desc h3{font-size:18px; color:var(--brand); margin-bottom:10px;}
+  .ctx-desc p{font-size:13px; color:var(--dim); line-height:1.8;}
+  .ctx-desc .pt{display:flex; gap:8px; align-items:flex-start; margin-top:12px; font-size:12px; color:var(--txt);}
+  .ctx-desc .pt::before{content:"✓"; color:var(--ok); font-weight:800;}
+
+  /* 功能矩阵 */
+  .feat{margin-top:90px;}
+  .feat h2{text-align:center; font-size:26px; font-weight:800; margin-bottom:8px; color:var(--brand);}
+  .feat .fs{text-align:center; color:var(--dim); font-size:13px; margin-bottom:36px;}
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:22px;
+    transition:transform .2s, box-shadow .2s; box-shadow:0 4px 16px rgba(74,95,168,.08);}
+  .card:hover{transform:translateY(-4px); box-shadow:0 14px 34px rgba(74,95,168,.16);}
+  .card .ico{width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:14px;
+    background:linear-gradient(135deg,#eef1fb,#dce3f7); border:1px solid var(--line);}
+  .card .ico img{width:38px; height:43px; object-fit:contain;}
+  .card h3{font-size:16px; margin-bottom:7px; color:var(--txt);}
+  .card p{font-size:12px; color:var(--dim); line-height:1.7;}
+
+  /* 控制坞 */
+  .dock{position:fixed; bottom:22px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:99;
+    background:rgba(255,255,255,.9); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:999px; padding:10px 14px;
+    box-shadow:0 12px 40px rgba(74,95,168,.2);}
+  .dock button{padding:9px 18px; font-size:12px; font-weight:700; border-radius:999px; border:1px solid var(--line);
+    background:#fff; color:var(--txt); cursor:pointer; transition:all .15s; white-space:nowrap;}
+  .dock button:hover{background:var(--bg2);}
+  .dock button.primary{background:linear-gradient(90deg,#4a5fa8,#7f96d2); color:#fff; border:none;}
+  .statusline{position:fixed; bottom:82px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--brand); z-index:99; letter-spacing:1px; font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">D S H · I S L A N D &nbsp;产 品 概 念</div>
+    <h1>鲸鱼娘灵动岛 · Mac 与手机 实时互通</h1>
+    <p>菜单栏上的 AI 工作搭档 —— 状态、进展、审批，一端发生，两端同步。</p>
+    <div class="sub2">Mac 菜单栏灵动岛 &nbsp;·&nbsp; iPhone 灵动岛 Live Activity &nbsp;·&nbsp; WebSocket 双向通道</div>
+  </div>
+
+  <!-- 舞台 -->
+  <div class="stage">
+    <!-- Mac -->
+    <div class="mac">
+      <div class="mac-screen">
+        <div class="menubar">
+          <div class="mb-left"><span></span><span>Finder</span><span>dsh</span></div>
+          <div class="mb-right">
+            <span class="mb-ico">􀊫</span><span class="mb-ico">􀙇</span>
+            <div class="capsule" id="capsule">
+              <span class="wv"><img src="assets/whale-half.png" alt="鲸鱼娘"></span><span class="dt" id="macDot"></span><span class="tx" id="macTx">运行中 ·3</span>
+            </div>
+            <span class="mb-ico">10:24</span>
+          </div>
+        </div>
+        <div style="height:300px;"></div>
+        <div class="panel" id="panel">
+          <div class="p-head">
+            <img src="assets/whale-celebrate.png" alt="鲸鱼娘">
+            <div><b>鲸鱼娘 · dsh-island</b><small>DeepSeek Harness 实时面板</small></div>
+            <span class="p-live">● LIVE</span>
+          </div>
+          <div class="p-body">
+            <div class="p-stats">
+              <div class="stat"><div class="n" id="sTools">3</div><div class="l">工具</div></div>
+              <div class="stat"><div class="n">1</div><div class="l">子代理</div></div>
+              <div class="stat"><div class="n" id="sTime">2m</div><div class="l">时长</div></div>
+              <div class="stat"><div class="n">2.4k</div><div class="l">Tokens</div></div>
+            </div>
+            <div class="evts" id="evts">
+              <div class="evt"><span class="tag ok">完成</span> 测试通过 12/12</div>
+              <div class="evt"><span class="tag run">运行</span> 执行 Bash: npm test</div>
+            </div>
+            <div class="appr-card" id="macAppr">
+              <div class="a">⚠ 请求授权：写入 <b>file.txt</b></div>
+              <div class="appr-btns">
+                <button class="btn b-ok" onclick="decide('allow')">✓ 批准</button>
+                <button class="btn b-no" onclick="decide('deny')">✕ 拒绝</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dev-tag">macOS 菜单栏</div>
+    </div>
+
+    <!-- 链路 -->
+    <div class="link">
+      <div class="link-label">WEBSOCKET<br>双向同步</div>
+      <div class="beam"><div class="p"></div><div class="p p2"></div><div class="p p3"></div></div>
+      <div class="link-label" style="color:var(--dim)">&lt;100ms</div>
+    </div>
+
+    <!-- 手机 -->
+    <div class="phone">
+      <div class="phone-frame">
+        <div class="pscreen">
+          <div class="island" id="island">
+            <div class="ic"><img src="assets/whale-half.png" alt=""><span class="ld"></span></div>
+            <div class="im">
+              <img src="assets/whale-half-working.png" alt="">
+              <div><div class="t">执行测试</div><div class="s">dsh-island · 运行中</div></div>
+              <span class="c" id="imCnt">3</span>
+            </div>
+            <div class="ib">
+              <div class="hd"><img src="assets/whale-welcome.png" alt=""><div><b>鲸鱼娘 · dsh-island</b><small>与 Mac 实时同步</small></div></div>
+              <div class="pg"><i id="ibBar"></i></div>
+              <div class="st"><span>工具 <b id="ibTools">3</b></span><span>子代理 <b>1</b></span><span>时长 <b id="ibTime">2m</b></span></div>
+              <div class="ap" id="ibAppr">
+                <div class="a">⚠ Mac 请求授权：写入 file.txt</div>
+                <div class="btns">
+                  <button class="b-ok" onclick="decide('allow')">批准</button>
+                  <button class="b-no" onclick="decide('deny')">拒绝</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="pwall"><img src="assets/whale-idle.png" alt="鲸鱼娘"><br><span>灵动岛悬浮于主屏之上</span></div>
+          <div class="papps"><div class="app">📱</div><div class="app">💬</div><div class="app">🎵</div><div class="app">📷</div></div>
+          <div class="homebar"></div>
+        </div>
+      </div>
+      <div class="dev-tag">iPhone 灵动岛</div>
+    </div>
+  </div>
+
+  <!-- ===== 概念①：鲸群多设备联动 ===== -->
+  <div class="concept-sec">
+    <h2>🐳 鲸群协同 · 多设备一颗心</h2>
+    <div class="cs">Mac、iPhone、iPad 各有一只鲸鱼娘，它们彼此看得见 —— 一端完成，全群欢呼</div>
+    <div class="fleet">
+      <div class="fleet-dev macmini jump"><div class="screen"><img src="assets/whale-celebrate.png" alt=""></div><div class="fname">Mac mini</div><div class="fstat">任务完成 🎉</div></div>
+      <div class="fleet-dev iphone jump"><div class="screen"><img src="assets/whale-celebrate.png" alt=""></div><div class="fname">iPhone</div><div class="fstat">同步欢呼</div></div>
+      <div class="fleet-dev ipad jump"><div class="screen"><img src="assets/whale-celebrate.png" alt=""></div><div class="fname">iPad</div><div class="fstat">同步欢呼</div></div>
+    </div>
+    <div class="fleet-note">一个任务跑完，三台设备上的鲸鱼娘同时跳起来 —— 成就感应被所有屏幕分享</div>
+  </div>
+
+  <!-- ===== 概念②：零打扰智能收敛 ===== -->
+  <div class="concept-sec">
+    <h2>🤫 该出现时出现 · 该安静时安静</h2>
+    <div class="cs">灵动岛的智慧不是"显示更多"，而是"只在该打扰你时才展开"</div>
+    <div class="calm">
+      <div class="calm-card">
+        <div class="cc-t">😌 日常 · 安静待命</div>
+        <div class="cc-d">任务平稳推进时，鲸鱼娘缩成菜单栏一颗小胶囊，不抢注意力，一眼即安心。</div>
+        <div class="calm-demo calm-ok">
+          <div class="mini-capsule"><img src="assets/whale-half.png" alt=""><span>运行中 ·3</span></div>
+        </div>
+      </div>
+      <div class="calm-card">
+        <div class="cc-t">⚠️ 关键时刻 · 主动展开</div>
+        <div class="cc-d">只在需要你决策时（授权 / 失败 / 卡住）才弹出来，把控制权精准递到你手上。</div>
+        <div class="calm-demo calm-alert">
+          <div class="calm-expand"><div class="exp">⚠ 需要授权：写入 file.txt</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 概念③：审批情境卡片 ===== -->
+  <div class="concept-sec">
+    <h2>✅ 审批，先看清楚再决定</h2>
+    <div class="cs">不只是"批准/拒绝"两个按钮 —— 展开即见 diff 预览，一眼判断该不该批</div>
+    <div class="context-appr">
+      <div class="ctx-phone">
+        <div class="ctx-screen">
+          <div class="ctx-island">
+            <div class="ch"><img src="assets/whale-working.png" alt=""><b>请求授权 · 修改代码</b></div>
+            <div class="ctx-diff">
+              <div class="hd">src/index.ts</div>
+              <div class="del">- const timeout = 5000</div>
+              <div class="add">+ const timeout = 30000</div>
+              <div class="hd">2 处变更 · +1 -1</div>
+            </div>
+            <div class="cb"><button class="b-ok" onclick="ctxDecide('allow')">批准</button><button class="b-no" onclick="ctxDecide('deny')">拒绝</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="ctx-arrow">➜</div>
+      <div class="ctx-desc">
+        <h3>手机上也能看懂审批</h3>
+        <p>把关键上下文（改了哪个文件、改了什么）直接推到灵动岛，不用打开电脑，扫一眼 diff 就能放心决策。</p>
+        <div class="pt">diff / 命令内容 实时预览</div>
+        <div class="pt">批准后决定秒回 Mac 生效</div>
+        <div class="pt">敏感操作高亮警示</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 功能矩阵 -->
+  <div class="feat">
+    <h2>一端发生 · 两端同步</h2>
+    <div class="fs">从状态到审批，完整闭环</div>
+    <div class="grid">
+      <div class="card"><div class="ico"><img src="assets/whale-celebrate.png" alt=""></div><h3>鲸鱼娘桌宠</h3><p>15+ 状态动作，随工作流呼吸起伏——运行托腮思考、完成欢呼、出错惊呆，会动的工作搭档。</p></div>
+      <div class="card"><div class="ico">📊</div><h3>实时状态</h3><p>工具调用、子代理、会话时长、Token 用量，菜单栏胶囊一眼掌握，展开即看完整面板。</p></div>
+      <div class="card"><div class="ico">⚡</div><h3>毫秒级同步</h3><p>WebSocket 双向通道，Mac 上每一次推进，手机灵动岛 &lt;100ms 同步刷新。</p></div>
+      <div class="card"><div class="ico">✅</div><h3>跨端审批</h3><p>授权请求同时抵达两端，无论你在电脑前还是手机上，一点即批准/拒绝，决定即刻回传生效。</p></div>
+      <div class="card"><div class="ico">🎨</div><h3>个性皮肤</h3><p>樱花粉、深海蓝、鎏金、紫罗兰——多套穿搭随心切换，工作也要有格调。</p></div>
+      <div class="card"><div class="ico">🧩</div><h3>插件管理</h3><p>右键即可列出、启用、停用其他 DSH 插件，一个灵动岛统管整个工作台。</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="statusline" id="statusline">就绪 · 点击"自动播放演示"开始</div>
+
+<div class="dock">
+  <button class="primary" onclick="autoplay()">▶ 自动播放演示</button>
+  <button onclick="pushEvent()">📈 推送进展</button>
+  <button onclick="cycleIsland()">📱 切换手机岛</button>
+  <button onclick="toggleMac()">💻 切换 Mac 面板</button>
+  <button onclick="exportPNG()">📷 导出图片</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  let tools=3, secs=120, islandState=0;
+  const island=document.getElementById('island');
+  const panel=document.getElementById('panel');
+  const statusline=document.getElementById('statusline');
+  const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+  function say(t){ statusline.textContent=t; }
+  function fmt(){ return Math.floor(secs/60)+'m'; }
+  function render(){
+    document.getElementById('sTools').textContent=tools;
+    document.getElementById('ibTools').textContent=tools;
+    document.getElementById('imCnt').textContent=tools;
+    document.getElementById('macTx').textContent='运行中 ·'+tools;
+    document.getElementById('sTime').textContent=fmt();
+    document.getElementById('ibTime').textContent=fmt();
+    document.getElementById('ibBar').style.width=Math.min(95,tools*11)+'%';
+  }
+  setInterval(()=>{ secs++; render(); }, 1000);
+
+  function toggleMac(){ panel.classList.toggle('open'); }
+  document.getElementById('capsule').onclick=toggleMac;
+  const islNames=['收缩 · 贴刘海','迷你横幅','展开 · 可审批'];
+  function setIsland(i){ islandState=i; island.className='island'+(i===1?' mid':i===2?' big':''); }
+  function cycleIsland(){ setIsland((islandState+1)%3); say('手机灵动岛：'+islNames[islandState]); }
+  island.onclick=cycleIsland;
+
+  const evtPool=[
+    ['ok','完成','读取文件 config.yaml'],['run','运行','执行 Bash: git status'],
+    ['ok','完成','生成组件 Button.tsx'],['run','运行','搜索代码库 12 处'],['ok','完成','单元测试 +3 通过'],
+  ];
+  function pushEvent(){
+    tools++; const [c,t,d]=evtPool[Math.floor(Math.random()*evtPool.length)];
+    const box=document.getElementById('evts');
+    const el=document.createElement('div'); el.className='evt';
+    el.innerHTML='<span class="tag '+c+'">'+t+'</span> '+d;
+    box.prepend(el); while(box.children.length>3) box.lastChild.remove();
+    render(); flashDot();
+    if(islandState===0){ setIsland(1); }
+    say('📈 Mac 推送进展 → 手机已同步 ('+tools+' 工具)');
+  }
+  function flashDot(){
+    const d=document.getElementById('macDot');
+    d.style.background='#4ADE80'; d.style.boxShadow='0 0 10px #4ADE80';
+    setTimeout(()=>{ d.style.background='var(--run)'; d.style.boxShadow='0 0 8px var(--run)'; },700);
+  }
+  function decide(r){
+    ['macAppr','ibAppr'].forEach(id=>{
+      const a=document.getElementById(id); if(!a) return;
+      a.style.opacity=.4; a.querySelector('.a').innerHTML=(r==='allow'?'✓ 已批准':'✕ 已拒绝')+' · 决定已回传 Mac';
+    });
+    say(r==='allow'?'✅ 已批准（来自'+(islandState===2?'手机':'Mac')+'端）':'❌ 已拒绝');
+    setTimeout(()=>{ ['macAppr','ibAppr'].forEach(id=>{ const a=document.getElementById(id); if(a){ a.style.opacity=1; a.querySelector('.a').innerHTML='⚠ 请求授权：写入 <b>file.txt</b>'; }}); },1500);
+  }
+  function ctxDecide(r){
+    const el=document.querySelector('.ctx-island .ch b');
+    el.textContent=r==='allow'?'✓ 已批准 · 回传 Mac':'✕ 已拒绝';
+    setTimeout(()=>el.textContent='请求授权 · 修改代码',1400);
+  }
+
+  let playing=false;
+  async function autoplay(){
+    if(playing) return; playing=true;
+    say('🎬 演示开始：Mac 空闲待机…'); await sleep(1200);
+    toggleMac(); say('💻 点开 Mac 灵动岛 → 展开实时面板'); await sleep(1800);
+    pushEvent(); say('📈 工具调用推进，两端同步刷新'); await sleep(1500);
+    pushEvent(); await sleep(1300);
+    setIsland(1); say('📱 手机灵动岛弹出横幅提醒'); await sleep(1600);
+    setIsland(2); say('📱 展开手机灵动岛 → 详情 + 审批'); await sleep(1800);
+    decide('allow'); say('✅ 在手机上批准 → 决定回传 Mac'); await sleep(2000);
+    setIsland(0); say('🐋 完成 · 灵动岛收回刘海，继续待命'); await sleep(1200);
+    say('✨ 演示结束 · 可重播 / 导出图片'); playing=false;
+  }
+
+  function exportPNG(){
+    say('📷 正在渲染图片…');
+    html2canvas(document.body,{backgroundColor:'#e8ecf5',scale:1.5}).then(c=>{
+      const a=document.createElement('a'); a.download='dsh-island-概念图.png'; a.href=c.toDataURL('image/png'); a.click();
+      say('✅ 已导出 dsh-island-概念图.png');
+    }).catch(()=>say('⚠ 导出失败：建议用 Cmd+Shift+4 截图'));
+  }
+  render();
+</script>
+</body>
+</html>
