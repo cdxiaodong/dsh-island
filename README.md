@@ -211,6 +211,10 @@ node scripts/live-panel.mjs   # 浏览器版实时演示（无 DSH 时看效果�
 | NWListener Unix socket 接收 | CodeIsland `HookServer` |
 | 深色毛玻璃 SwiftUI 卡片 | CodeIsland `NotchPanelView` 风格精简 |
 
+## 致谢
+
+感谢 [LINUX DO](https://linux.do) 社区提供交流与推广的平台，感谢佬友们的反馈与支持。
+
 ## License
 
 MIT
